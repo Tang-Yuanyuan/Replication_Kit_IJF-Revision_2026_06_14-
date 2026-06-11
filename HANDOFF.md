@@ -19,6 +19,15 @@ D:\RUC\revision_package
 
 ## 主要入口
 
+历史来源文件已经从项目根目录移到：
+
+```text
+archive/historical_sources
+```
+
+这些文件只用于追溯原始代码来源，不参与当前复现流程。正式入口只使用
+`run_all.R`、`R/` 下的模块化脚本，以及 `python/empirical_4_2.py`。
+
 ### Section 4.1 及主表、附录表
 
 运行：
@@ -179,8 +188,33 @@ R 辅助脚本已经支持自定义结果子目录：
 
 - `results/empirical4.2`：默认带 seed 的完整流程结果。
 - `results/empirical4.2_legacy_wta`：只固定 WTA 旧参数的结果，当前用户希望看的就是这个。
-- `results/empirical4.2_legacy_params` 和 `results/empirical4.2_legacy_params_check`：早前测试过“Pref + WTA 都固定”的结果。用户后来明确说不需要这样，应避免继续使用这两个目录作为论文口径。
-- `results/empirical4.2_legacy_wta_smoke`：早前小规模 smoke test，可忽略。
+- `results/empirical4.3`：默认 Section 4.3 知识增长模拟结果。
+- `results/figures`、`results/tables`、`results/logs`：Section 4.1 的正式输出。
+
+已经清理掉的测试目录：
+
+- `results/empirical4.2_legacy_params`
+- `results/empirical4.2_legacy_params_check`
+- `results/empirical4.2_legacy_wta_smoke`
+- `results/empirical4.3_legacy_wta_smoke`
+- `python/__pycache__`
+
+不要再使用 `empirical4.2_legacy_params` 口径；用户后来明确要求只固定 WTA，不固定 Pref Alt。
+
+## 归档历史来源
+
+以下文件已经移入 `archive/historical_sources`：
+
+- `4.1.R`
+- `4.1_draw.R`
+- `4.1_robust.R`
+- `4.1_weighted.R`
+- `4.1_weighted_table.R`
+- `energy_wta.csv`
+- `参考图1.jpg`
+- `实证4.2部分的模块1.txt`
+
+当前正式原始数据位置是 `data/raw/energy_wta.csv`，不要从根目录读取旧数据副本。
 
 ## 建议给论文中的说明口径
 
@@ -197,4 +231,4 @@ R 辅助脚本已经支持自定义结果子目录：
 1. 如果用户需要“看到更新”，先确认她看的是否是 `results/empirical4.2_legacy_wta`。
 2. 如果她希望默认目录也显示 WTA-only 结果，可以重新运行同一命令但把 `--output-subdir` 改成 `empirical4.2`。这会覆盖默认结果，不建议在没有明确确认前这么做。
 3. 如果需要把 `legacy_wta` 结果复制到论文最终交付目录，应明确目标目录后再复制，避免混淆默认可复现结果。
-4. 不要再使用 `--use-legacy-params`，当前脚本已经移除了这个口径；只使用 `--use-legacy-wta-params`。
+4. 不要再使用“Pref + WTA 都固定”的旧测试口径；只使用 `--use-legacy-wta-params`。

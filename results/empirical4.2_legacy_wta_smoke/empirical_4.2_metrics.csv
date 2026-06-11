@@ -1,7 +1,0 @@
-﻿,Total_Tests,Valid_Predictions,Validity_Rate,Accept_Rate,Perfect_Rate,Accept_Cost
-Random (Lower Bound),313,304,97.12%,83.55%,60.36%,33.62
-Demos,313,195,62.30%,88.21%,66.15%,31.57
-All,313,195,62.30%,87.69%,65.13%,33.48
-Demos,313,178,56.87%,90.45%,70.22%,27.48
-All,313,189,60.38%,88.89%,73.54%,26.88
-Ideal (Upper Bound),313,286,91.37%,100.00%,100.00%,25.65

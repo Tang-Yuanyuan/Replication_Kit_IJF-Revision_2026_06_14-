@@ -1,3 +1,0 @@
-Fixed hyperparameters copied from the original manuscript table.
-Pref Alt fixed: True
-WTA fixed: True

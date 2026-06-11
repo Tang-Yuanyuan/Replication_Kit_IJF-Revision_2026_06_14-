@@ -12,9 +12,13 @@ empirical results.
 - `results/figures/`: generated figures.
 - `results/logs/`: model diagnostics and R session information.
 - `run_all.R`: one-click reproduction script.
+- `python/empirical_4_2.py`: reproduction script for Section 4.2 and 4.3.
+- `archive/historical_sources/`: original ad hoc scripts and reference files
+  kept for traceability only.
 
-The original ad hoc scripts are kept in the project root for traceability.
-The reproducible workflow uses the scripts under `R/`.
+The reproducible workflow uses `run_all.R`, scripts under `R/`, and
+`python/empirical_4_2.py`. Files under `archive/historical_sources/` are not
+called by the current workflow.
 
 ## How to Reproduce
 
