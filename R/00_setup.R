@@ -1,0 +1,42 @@
+options(stringsAsFactors = FALSE)
+
+if (!exists("PROJECT_ROOT", inherits = TRUE)) {
+  PROJECT_ROOT <- normalizePath(getwd(), winslash = "/", mustWork = TRUE)
+}
+
+paths <- list(
+  root = PROJECT_ROOT,
+  raw_data = file.path(PROJECT_ROOT, "data", "raw", "energy_wta.csv"),
+  results = file.path(PROJECT_ROOT, "results"),
+  tables = file.path(PROJECT_ROOT, "results", "tables"),
+  figures = file.path(PROJECT_ROOT, "results", "figures"),
+  logs = file.path(PROJECT_ROOT, "results", "logs")
+)
+
+invisible(lapply(paths[c("results", "tables", "figures", "logs")], dir.create,
+                 recursive = TRUE, showWarnings = FALSE))
+
+custom_lib <- "D:/R-4.5.2/Packages"
+if (dir.exists(custom_lib)) {
+  .libPaths(unique(c(custom_lib, .libPaths())))
+}
+
+required_packages <- c(
+  "MASS", "dplyr", "brant", "survey", "ggplot2"
+)
+
+missing_packages <- required_packages[
+  !vapply(required_packages, requireNamespace, logical(1), quietly = TRUE)
+]
+
+if (length(missing_packages) > 0) {
+  stop(
+    "Missing required R packages: ",
+    paste(missing_packages, collapse = ", "),
+    call. = FALSE
+  )
+}
+
+invisible(lapply(required_packages, library, character.only = TRUE))
+
+theme_set(ggplot2::theme_classic())
