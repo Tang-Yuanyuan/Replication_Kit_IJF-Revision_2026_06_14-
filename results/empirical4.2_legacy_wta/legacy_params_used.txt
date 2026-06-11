@@ -1,0 +1,2 @@
+WTA XGBoost regressors used fixed hyperparameters copied from the original manuscript table.
+Pref Alt classifiers were trained through the seeded Optuna workflow.

@@ -42,17 +42,16 @@ The default Section 4.2 command uses 50 Optuna trials for preference-alternative
 classification, 100 Optuna trials for WTA regression, 1000 random-baseline Monte
 Carlo draws, and 200 knowledge-growth simulation repetitions.
 
-To rerun Section 4.2 with the original manuscript-table hyperparameters fixed,
-write the outputs to a separate directory:
+To rerun Section 4.2 with the original WTA hyperparameters fixed, write the
+outputs to a separate directory:
 
 ```powershell
-& "D:\Python\python.exe" "D:\RUC\revision_package\python\empirical_4_2.py" --root "D:\RUC\revision_package" --use-legacy-params --output-subdir "empirical4.2_legacy_params" --skip-simulation
+& "D:\Python\python.exe" "D:\RUC\revision_package\python\empirical_4_2.py" --root "D:\RUC\revision_package" --use-legacy-wta-params --output-subdir "empirical4.2_legacy_wta" --skip-simulation
 ```
 
-This mode fixes both the preference-alternative and WTA XGBoost hyperparameters
-to the rounded values reported in `Table_D.2_xgboost_hyperparameters`. Use
-`--use-legacy-wta-params` instead of `--use-legacy-params` when only the WTA
-regressors should be fixed.
+This mode keeps the preference-alternative XGBoost classifiers on the seeded
+Optuna workflow and fixes only the WTA XGBoost regressors to the values
+reported in `Table_D.2_xgboost_hyperparameters`.
 
 For a faster smoke test of the Section 4.2 workflow:
 

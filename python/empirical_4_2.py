@@ -32,14 +32,6 @@ CATEGORICAL_COLS = [
     "know_about_carbon_policy",
 ]
 COST_MAP = {7: 0, 6: 10, 5: 25, 4: 50, 3: 75, 2: 100}
-LEGACY_PREF_ALT_PARAMS = {
-    "Car_Demos": {"n_estimators": 50, "max_depth": 8, "learning_rate": 0.144, "gamma": 2.561, "reg_lambda": 0.949},
-    "Elec_Demos": {"n_estimators": 60, "max_depth": 2, "learning_rate": 0.131, "gamma": 1.349, "reg_lambda": 2.094},
-    "Green_Demos": {"n_estimators": 40, "max_depth": 2, "learning_rate": 0.125, "gamma": 2.107, "reg_lambda": 2.441},
-    "Car_All": {"n_estimators": 190, "max_depth": 6, "learning_rate": 0.194, "gamma": 1.575, "reg_lambda": 2.291},
-    "Elec_All": {"n_estimators": 20, "max_depth": 2, "learning_rate": 0.190, "gamma": 3.382, "reg_lambda": 1.986},
-    "Green_All": {"n_estimators": 40, "max_depth": 4, "learning_rate": 0.076, "gamma": 1.834, "reg_lambda": 1.271},
-}
 LEGACY_WTA_PARAMS = {
     "Car_Demos_Reg": {"n_estimators": 290, "max_depth": 6, "learning_rate": 0.048, "gamma": 1.642, "reg_lambda": 3.851},
     "Elec_Demos_Reg": {"n_estimators": 190, "max_depth": 4, "learning_rate": 0.047, "gamma": 1.920, "reg_lambda": 4.654},
@@ -97,16 +89,6 @@ def parse_args() -> argparse.Namespace:
         "--sim-output-subdir",
         default=None,
         help="Subdirectory under results/ for Section 4.3 outputs. Defaults to empirical4.3.",
-    )
-    parser.add_argument(
-        "--use-legacy-params",
-        action="store_true",
-        help="Use the original manuscript-table hyperparameters for both Pref Alt and WTA models.",
-    )
-    parser.add_argument(
-        "--use-legacy-pref-alt-params",
-        action="store_true",
-        help="Use the original preference-alternative hyperparameters recorded in the manuscript table.",
     )
     parser.add_argument(
         "--use-legacy-wta-params",
@@ -173,22 +155,6 @@ def train_xgb_model_bayesian(
         "eval_metric": "logloss",
         "random_state": RANDOM_SEED,
         "n_jobs": -1,
-    }
-    model = xgb.XGBClassifier(**final_params)
-    model.fit(train_x, train_y)
-    return model
-
-
-def train_xgb_classifier_fixed(
-    train_x: pd.DataFrame,
-    train_y: pd.Series,
-    params: dict[str, float | int],
-) -> xgb.XGBClassifier:
-    final_params = {
-        **params,
-        "objective": "binary:logistic",
-        "eval_metric": "logloss",
-        "random_state": RANDOM_SEED,
     }
     model = xgb.XGBClassifier(**final_params)
     model.fit(train_x, train_y)
@@ -872,8 +838,7 @@ def main() -> None:
     output_dir = root / "results" / args.output_subdir
     output_dir.mkdir(parents=True, exist_ok=True)
     sim_output_subdir = args.sim_output_subdir or "empirical4.3"
-    use_legacy_pref_alt = args.use_legacy_params or args.use_legacy_pref_alt_params
-    use_legacy_wta = args.use_legacy_params or args.use_legacy_wta_params
+    use_legacy_wta = args.use_legacy_wta_params
 
     input_file = root / "results" / "energy_wta_with_post_weights.csv"
     if not input_file.exists():
@@ -902,20 +867,13 @@ def main() -> None:
     trained_models: dict[str, xgb.XGBClassifier] = {}
     for name, train_df, y_col, features, group_type in train_tasks:
         print(f"Training {name}...")
-        if use_legacy_pref_alt:
-            trained_models[name] = train_xgb_classifier_fixed(
-                train_df[features],
-                train_df[y_col],
-                LEGACY_PREF_ALT_PARAMS[name],
-            )
-        else:
-            trained_models[name] = train_xgb_model_bayesian(
-                train_df[features],
-                train_df[y_col],
-                group_type=group_type,
-                n_trials=args.n_trials,
-                cv=args.cv,
-            )
+        trained_models[name] = train_xgb_model_bayesian(
+            train_df[features],
+            train_df[y_col],
+            group_type=group_type,
+            n_trials=args.n_trials,
+            cv=args.cv,
+        )
 
     reg_tasks = [
         ("Car_Demos_Reg", train_car, "wta_car", feature_sets["demos_car"], "Demos"),
@@ -948,11 +906,10 @@ def main() -> None:
         mae = np.mean(np.abs(test_encoded[y_col] - preds))
         print(f"{name} test MAE: {mae:.4f}")
 
-    if use_legacy_pref_alt or use_legacy_wta:
+    if use_legacy_wta:
         (output_dir / "legacy_params_used.txt").write_text(
-            "Fixed hyperparameters copied from the original manuscript table.\n"
-            f"Pref Alt fixed: {use_legacy_pref_alt}\n"
-            f"WTA fixed: {use_legacy_wta}\n",
+            "WTA XGBoost regressors used fixed hyperparameters copied from the original manuscript table.\n"
+            "Pref Alt classifiers were trained through the seeded Optuna workflow.\n",
             encoding="utf-8",
         )
 
