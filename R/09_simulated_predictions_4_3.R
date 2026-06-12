@@ -11,8 +11,8 @@ source(file.path(PROJECT_ROOT, "R", "00_setup.R"), encoding = "UTF-8")
 train_subdir <- if (length(args) >= 2) args[[2]] else "empirical4.2"
 sim_subdir <- if (length(args) >= 3) args[[3]] else "empirical4.3"
 
-train_file <- file.path(PROJECT_ROOT, "results", train_subdir, "train_data.csv")
-sim_dir <- file.path(PROJECT_ROOT, "results", sim_subdir)
+train_file <- file.path(paths$temp_data, train_subdir, "train_data.csv")
+sim_dir <- file.path(paths$temp_data, sim_subdir)
 test_file <- file.path(sim_dir, "test_data_simulated.csv")
 dir.create(sim_dir, recursive = TRUE, showWarnings = FALSE)
 

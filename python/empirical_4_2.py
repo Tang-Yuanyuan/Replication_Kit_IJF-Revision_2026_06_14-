@@ -43,7 +43,7 @@ LEGACY_WTA_PARAMS = {
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Reproduce empirical Section 4.2.")
+    parser = argparse.ArgumentParser(description="Reproduce empirical Sections 4.2 and 4.3.")
     parser.add_argument(
         "--root",
         type=Path,
@@ -713,7 +713,7 @@ def build_y_variables(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def prepare_train_test(df: pd.DataFrame, output_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
+def prepare_train_test(df: pd.DataFrame, temp_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     df = build_y_variables(df)
     df["stratify_key"] = df["y_car"].astype(str) + df["y_elec"].astype(str) + df["y_green"].astype(str)
 
@@ -726,8 +726,8 @@ def prepare_train_test(df: pd.DataFrame, output_dir: Path) -> tuple[pd.DataFrame
 
     train_data = train_data.drop(columns=["stratify_key"])
     test_data = test_data.drop(columns=["stratify_key"])
-    train_data.to_csv(output_dir / "train_data.csv", index=False, encoding="utf-8-sig")
-    test_data.to_csv(output_dir / "test_data.csv", index=False, encoding="utf-8-sig")
+    train_data.to_csv(temp_dir / "train_data.csv", index=False, encoding="utf-8-sig")
+    test_data.to_csv(temp_dir / "test_data.csv", index=False, encoding="utf-8-sig")
     return train_data, test_data
 
 
@@ -837,17 +837,21 @@ def main() -> None:
     root = args.root.resolve()
     output_dir = root / "results" / args.output_subdir
     output_dir.mkdir(parents=True, exist_ok=True)
+    temp_root = root / "data" / "temp"
+    temp_root.mkdir(parents=True, exist_ok=True)
+    temp_dir = temp_root / args.output_subdir
+    temp_dir.mkdir(parents=True, exist_ok=True)
     sim_output_subdir = args.sim_output_subdir or "empirical4.3"
     use_legacy_wta = args.use_legacy_wta_params
 
-    input_file = root / "results" / "energy_wta_with_post_weights.csv"
+    input_file = temp_root / "energy_wta_with_post_weights.csv"
     if not input_file.exists():
         raise FileNotFoundError(
             f"{input_file} not found. Run run_all.R first to generate weighted data."
         )
 
     df = pd.read_csv(input_file)
-    train_raw, test_raw = prepare_train_test(df, output_dir)
+    train_raw, test_raw = prepare_train_test(df, temp_dir)
     train_encoded, test_encoded = encode_for_xgboost(train_raw, test_raw)
     feature_sets = get_feature_sets(train_encoded)
 
@@ -933,8 +937,8 @@ def main() -> None:
 
     print("Running R logit models...")
     run_r_logit(root, args.rscript, args.output_subdir)
-    logit_demos = pd.read_csv(output_dir / "logit_probs_demos.csv")
-    logit_all = pd.read_csv(output_dir / "logit_probs_all.csv")
+    logit_demos = pd.read_csv(temp_dir / "logit_probs_demos.csv")
+    logit_all = pd.read_csv(temp_dir / "logit_probs_all.csv")
     logit_demos.index = test_encoded.index
     logit_all.index = test_encoded.index
 
@@ -1100,8 +1104,8 @@ def main() -> None:
     run_r_ologit_wta(root, args.rscript, args.output_subdir)
     results_xgb_all = append_final_wta_column(results_xgb_all, test_encoded, trained_models_reg, "All")
     results_xgb_demos = append_final_wta_column(results_xgb_demos, test_encoded, trained_models_reg, "Demos")
-    results_eco_all = update_eco_results_with_floor(results_eco_all, output_dir / "wta_preds_all.csv")
-    results_eco_demos = update_eco_results_with_floor(results_eco_demos, output_dir / "wta_preds_demos.csv")
+    results_eco_all = update_eco_results_with_floor(results_eco_all, temp_dir / "wta_preds_all.csv")
+    results_eco_demos = update_eco_results_with_floor(results_eco_demos, temp_dir / "wta_preds_demos.csv")
 
     current_n_list = [55, 100, 145]
     m_ideal = get_n_household_metrics(results_ideal, test_encoded, n_list=current_n_list)
@@ -1322,6 +1326,8 @@ def main() -> None:
 
     sim_dir = root / "results" / sim_output_subdir
     sim_dir.mkdir(parents=True, exist_ok=True)
+    sim_temp_dir = temp_root / sim_output_subdir
+    sim_temp_dir.mkdir(parents=True, exist_ok=True)
     simulate_results = {
         "ideal_sm": {},
         "random_sm": {},
@@ -1335,11 +1341,11 @@ def main() -> None:
     for i in range(args.simulation_iterations):
         np.random.seed(RANDOM_SEED + i)
         simulated_raw = simulate_policy_knowledge_upgrade(test_base.copy())
-        simulated_raw.to_csv(sim_dir / "test_data_simulated.csv", index=False, encoding="utf-8-sig")
+        simulated_raw.to_csv(sim_temp_dir / "test_data_simulated.csv", index=False, encoding="utf-8-sig")
 
         run_r_simulated_predictions(root, args.rscript, args.output_subdir, sim_output_subdir)
-        logit_demos_sm = pd.read_csv(sim_dir / "logit_probs_demos_simulated.csv")
-        logit_all_sm = pd.read_csv(sim_dir / "logit_probs_all_simulated.csv")
+        logit_demos_sm = pd.read_csv(sim_temp_dir / "logit_probs_demos_simulated.csv")
+        logit_all_sm = pd.read_csv(sim_temp_dir / "logit_probs_all_simulated.csv")
         logit_demos_sm.index = simulated_raw.index
         logit_all_sm.index = simulated_raw.index
         results_eco_demos_sm = get_processed_results(logit_demos_sm, simulated_raw, threshold=0)

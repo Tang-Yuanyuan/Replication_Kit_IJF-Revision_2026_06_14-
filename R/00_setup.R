@@ -8,7 +8,9 @@ EMPIRICAL_SECTION <- "empirical4.1"
 
 paths <- list(
   root = PROJECT_ROOT,
+  data = file.path(PROJECT_ROOT, "data"),
   raw_data = file.path(PROJECT_ROOT, "data", "raw", "energy_wta.csv"),
+  temp_data = file.path(PROJECT_ROOT, "data", "temp"),
   results = file.path(PROJECT_ROOT, "results"),
   empirical4_1 = file.path(PROJECT_ROOT, "results", EMPIRICAL_SECTION),
   tables = file.path(PROJECT_ROOT, "results", EMPIRICAL_SECTION, "tables"),
@@ -17,7 +19,7 @@ paths <- list(
 )
 
 invisible(lapply(
-  paths[c("results", "empirical4_1", "tables", "figures", "logs")],
+  paths[c("data", "temp_data", "results", "empirical4_1", "tables", "figures", "logs")],
   dir.create,
   recursive = TRUE,
   showWarnings = FALSE

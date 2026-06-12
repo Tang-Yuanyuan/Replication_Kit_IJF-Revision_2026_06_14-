@@ -20,7 +20,7 @@ source(file.path(PROJECT_ROOT, "R", "06_weighted.R"), encoding = "UTF-8")
 message("Running empirical Section 4.1 workflow...")
 
 message("Loading and preparing data...")
-raw_data <- load_raw_data()f
+raw_data <- load_raw_data()
 prepared <- prepare_analysis_data(raw_data)
 
 message("Writing descriptive tables...")

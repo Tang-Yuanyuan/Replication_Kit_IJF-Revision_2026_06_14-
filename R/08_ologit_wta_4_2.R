@@ -8,10 +8,11 @@ if (length(args) >= 1) {
 
 source(file.path(PROJECT_ROOT, "R", "00_setup.R"), encoding = "UTF-8")
 
-data_dir <- file.path(PROJECT_ROOT, "results", "empirical4.2")
+data_dir <- file.path(paths$temp_data, "empirical4.2")
 if (length(args) >= 2) {
-  data_dir <- file.path(PROJECT_ROOT, "results", args[[2]])
+  data_dir <- file.path(paths$temp_data, args[[2]])
 }
+dir.create(data_dir, recursive = TRUE, showWarnings = FALSE)
 train_df <- read.csv(file.path(data_dir, "train_data.csv"), check.names = FALSE, fileEncoding = "UTF-8")
 test_df <- read.csv(file.path(data_dir, "test_data.csv"), check.names = FALSE, fileEncoding = "UTF-8")
 

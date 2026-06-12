@@ -203,7 +203,7 @@ run_weighted_analysis <- function(prepared) {
       "caruse", "conditioner1month", "mainuseelec", knowledge_vars,
       "publictrans", "conditionernumber", "energy_consume2020", "weights"
     ))),
-    file = file.path(paths$results, "energy_wta_with_post_weights.csv"),
+    file = file.path(paths$temp_data, "energy_wta_with_post_weights.csv"),
     row.names = FALSE,
     fileEncoding = "UTF-8"
   )

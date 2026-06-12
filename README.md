@@ -1,24 +1,27 @@
 # Reproduction Package
 
-This folder contains the code and data needed to reproduce the Section 4.1
-empirical results.
+This folder contains the code and data needed to reproduce the empirical
+results.
 
 ## Directory Structure
 
 - `data/raw/energy_wta.csv`: analysis data used by the scripts.
+- `data/temp/`: generated intermediate data shared between R and Python scripts.
 - `R/`: modular R scripts for data preparation, models, figures, robustness
   checks, and weighted analysis.
 - `results/empirical4.1/tables/`: generated Section 4.1 CSV and LaTeX tables.
 - `results/empirical4.1/figures/`: generated Section 4.1 figures.
 - `results/empirical4.1/logs/`: Section 4.1 model diagnostics and R session information.
 - `run_all.R`: one-click reproduction script.
-- `python/empirical_4_2.py`: reproduction script for Section 4.2 and 4.3.
+- `run_empirical4_2_3.py`: root-level entry point for Section 4.2 and 4.3.
+- `python/empirical_4_2.py`: implementation script for Section 4.2 and 4.3.
+- `ENGINEERING_PLAN.md`: current reorganization plan and status.
 - `archive/historical_sources/`: original ad hoc scripts and reference files
   kept for traceability only.
 
-The reproducible workflow uses `run_all.R`, scripts under `R/`, and
-`python/empirical_4_2.py`. Files under `archive/historical_sources/` are not
-called by the current workflow.
+The reproducible workflow uses `run_all.R`, `run_empirical4_2_3.py`, scripts
+under `R/`, and `python/empirical_4_2.py`. Files under
+`archive/historical_sources/` are not called by the current workflow.
 
 ## How to Reproduce
 
@@ -39,7 +42,7 @@ Or run from a terminal:
 Then reproduce Section 4.2:
 
 ```powershell
-& "D:\Python\python.exe" "D:\RUC\revision_package\python\empirical_4_2.py" --root "D:\RUC\revision_package"
+& "D:\Python\python.exe" "D:\RUC\revision_package\run_empirical4_2_3.py" --root "D:\RUC\revision_package"
 ```
 
 The default Section 4.2 command uses 50 Optuna trials for preference-alternative
@@ -50,7 +53,7 @@ To rerun Section 4.2 with the original WTA hyperparameters fixed, write the
 outputs to a separate directory:
 
 ```powershell
-& "D:\Python\python.exe" "D:\RUC\revision_package\python\empirical_4_2.py" --root "D:\RUC\revision_package" --use-legacy-wta-params --output-subdir "empirical4.2_legacy_wta" --skip-simulation
+& "D:\Python\python.exe" "D:\RUC\revision_package\run_empirical4_2_3.py" --root "D:\RUC\revision_package" --use-legacy-wta-params --output-subdir "empirical4.2_legacy_wta" --skip-simulation
 ```
 
 This mode keeps the preference-alternative XGBoost classifiers on the seeded
@@ -60,7 +63,7 @@ reported in `Table_D.2_xgboost_hyperparameters`.
 For a faster smoke test of the Section 4.2 workflow:
 
 ```powershell
-& "D:\Python\python.exe" "D:\RUC\revision_package\python\empirical_4_2.py" --root "D:\RUC\revision_package" --n-trials 1 --reg-n-trials 1 --cv 2 --random-iterations 5
+& "D:\Python\python.exe" "D:\RUC\revision_package\run_empirical4_2_3.py" --root "D:\RUC\revision_package" --n-trials 1 --reg-n-trials 1 --cv 2 --random-iterations 5
 ```
 
 ## R Environment
@@ -95,6 +98,9 @@ Required Python packages:
 - `matplotlib`
 
 After the run, `results/empirical4.1/logs/session_info.txt` records the exact R session.
+Intermediate files such as post-stratification data, train/test splits, logit
+probabilities, ordered-logit WTA predictions, and simulated test data are
+written under `data/temp/`.
 
 ## Numbered Outputs
 
