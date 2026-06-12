@@ -1,15 +1,23 @@
-create_post_stratification_weights <- function(df) {
-  df_clean <- df %>%
-    mutate(
-      edu_strat = case_when(
+utils::globalVariables(c(
+  "female", "loc_strat", "edu_strat", "gender_strat", "age",
+  "paths", "knowledge_vars", "write_latex_table",
+  "make_model_formula", "analysis_subsets", "export_compact_results"
+))
+
+create_ps_weights <- function(df) {
+  df_clean <- df |>
+    dplyr::mutate(
+      edu_strat = dplyr::case_when(
         education == "uneducated" ~ "Uneducated",
         education == "primary" ~ "Primary",
         education == "junior high" ~ "Junior high",
         education == "senior high" ~ "Senior high",
-        education %in% c("associate", "bachelor", "postgraduate") ~ "College or higher",
+        education %in% c(
+          "associate", "bachelor", "postgraduate"
+        ) ~ "College or higher",
         TRUE ~ NA_character_
       ),
-      loc_strat = case_when(
+      loc_strat = dplyr::case_when(
         location %in% c("city", "county seat") ~ "Urban",
         location == "rural" ~ "Rural",
         TRUE ~ NA_character_
@@ -18,10 +26,16 @@ create_post_stratification_weights <- function(df) {
       loc_strat = factor(loc_strat, levels = c("Rural", "Urban")),
       edu_strat = factor(
         edu_strat,
-        levels = c("Uneducated", "Primary", "Junior high", "Senior high", "College or higher")
+        levels = c(
+          "Uneducated", "Primary", "Junior high",
+          "Senior high", "College or higher"
+        )
       )
-    ) %>%
-    filter(!is.na(gender_strat), !is.na(loc_strat), !is.na(edu_strat), !is.na(age))
+    ) |>
+    dplyr::filter(
+      !is.na(gender_strat), !is.na(loc_strat),
+      !is.na(edu_strat), !is.na(age)
+    )
 
   n_clean <- nrow(df_clean)
   targets <- list(
@@ -35,7 +49,10 @@ create_post_stratification_weights <- function(df) {
     "age" = n_clean * 38.8
   )
 
-  mm <- model.matrix(~ gender_strat + loc_strat + edu_strat + age, data = df_clean)
+  mm <- model.matrix(
+    ~ gender_strat + loc_strat + edu_strat + age,
+    data = df_clean
+  )
   pop_totals <- numeric(ncol(mm))
   names(pop_totals) <- colnames(mm)
 
@@ -81,12 +98,12 @@ target_balance_values <- function() {
     female = 0.488,
     urban = 0.639,
     education = c(
-    "Uneducated" = 0.027,
-    "Primary" = 0.244,
-    "Junior high" = 0.345,
-    "Senior high" = 0.151,
-    "College or higher" = 0.155
-  )
+      "Uneducated" = 0.027,
+      "Primary" = 0.244,
+      "Junior high" = 0.345,
+      "Senior high" = 0.151,
+      "College or higher" = 0.155
+    )
   )
 }
 
@@ -107,7 +124,10 @@ balance_values <- function(df_clean, weight_var = NULL) {
 
   if (is.null(weight_var)) {
     age <- mean(df_clean$age, na.rm = TRUE)
-    female <- mean(as.numeric(as.character(df_clean$gender_strat)) == 1, na.rm = TRUE)
+    female <- mean(
+      as.numeric(as.character(df_clean$gender_strat)) == 1,
+      na.rm = TRUE
+    )
     urban <- mean(df_clean$loc_strat == "Urban", na.rm = TRUE)
     edu <- prop.table(table(df_clean$edu_strat))
   } else {
@@ -117,15 +137,22 @@ balance_values <- function(df_clean, weight_var = NULL) {
       data = df_clean
     )
     age <- as.numeric(coef(survey::svymean(~age, design)))
-    female <- as.numeric(prop.table(survey::svytable(~gender_strat, design))["1"])
-    urban <- as.numeric(prop.table(survey::svytable(~loc_strat, design))["Urban"])
+    female <- as.numeric(
+      prop.table(survey::svytable(~gender_strat, design))["1"]
+    )
+    urban <- as.numeric(
+      prop.table(survey::svytable(~loc_strat, design))["Urban"]
+    )
     edu <- prop.table(survey::svytable(~edu_strat, design))
   }
 
   edu <- edu[names(targets$education)]
 
   data.frame(
-    Variable = c("Age", "Gender", "Location", rep("Education", length(targets$education))),
+    Variable = c(
+      "Age", "Gender", "Location",
+      rep("Education", length(targets$education))
+    ),
     Category = c("Mean", "Female", "Urban", names(targets$education)),
     Survey = c(
       format_one_decimal(age),
@@ -167,12 +194,18 @@ write_weight_balance <- function(df_clean) {
   write_balance_table(
     before,
     file.path(paths$tables, "Table_G.10_unweighted_balance.csv"),
-    "Table G.10. Differences Between Unweighted Survey Means and Population Targets"
+    paste0(
+      "Table G.10. Differences Between Unweighted ",
+      "Survey Means and Population Targets"
+    )
   )
   write_balance_table(
     after,
     file.path(paths$tables, "Table_G.11_weighted_balance_test.csv"),
-    "Table G.11. Differences Between Weighted Survey Means and Population Targets"
+    paste0(
+      "Table G.11. Differences Between Weighted ",
+      "Survey Means and Population Targets"
+    )
   )
 
   list(before = before, after = after)
@@ -193,12 +226,12 @@ fit_svyolr_set <- function(design, outcome, controls, exposure) {
 }
 
 run_weighted_analysis <- function(prepared) {
-  weighted <- create_post_stratification_weights(prepared$data)
+  weighted <- create_ps_weights(prepared$data)
   df <- weighted$data
   write_weight_balance(weighted$clean)
 
   write.csv(
-    df %>% select(any_of(c(
+    df |> dplyr::select(dplyr::any_of(c(
       "id", "wta_car", "wta_elec", "wta_green", prepared$base_controls,
       "caruse", "conditioner1month", "mainuseelec", knowledge_vars,
       "publictrans", "conditionernumber", "energy_consume2020", "weights"
@@ -210,33 +243,54 @@ run_weighted_analysis <- function(prepared) {
 
   subsets <- analysis_subsets(df)
   designs <- list(
-    car = survey::svydesign(ids = ~1, weights = ~weights, data = subsets$car),
-    elec = survey::svydesign(ids = ~1, weights = ~weights, data = subsets$elec),
-    green = survey::svydesign(ids = ~1, weights = ~weights, data = subsets$green)
+    car = survey::svydesign(
+      ids = ~1, weights = ~weights, data = subsets$car
+    ),
+    elec = survey::svydesign(
+      ids = ~1, weights = ~weights, data = subsets$elec
+    ),
+    green = survey::svydesign(
+      ids = ~1, weights = ~weights, data = subsets$green
+    )
   )
 
   models <- list(
-    car = fit_svyolr_set(designs$car, "wta_car", prepared$base_controls, "caruse"),
-    elec = fit_svyolr_set(designs$elec, "wta_elec", prepared$base_controls, "conditioner1month"),
-    green = fit_svyolr_set(designs$green, "wta_green", prepared$base_controls, "mainuseelec")
+    car = fit_svyolr_set(
+      designs$car, "wta_car", prepared$base_controls, "caruse"
+    ),
+    elec = fit_svyolr_set(
+      designs$elec, "wta_elec", prepared$base_controls, "conditioner1month"
+    ),
+    green = fit_svyolr_set(
+      designs$green, "wta_green", prepared$base_controls, "mainuseelec"
+    )
   )
 
   export_compact_results(
     models$car,
     "Table G.12. Weighted Transportation WTA",
-    "^location|^heard_about_global_warming|^know_about_low_carbon|^know_about_carbon_neutrality|^know_about_carbon_policy",
+    paste0(
+      "^location|^heard_about_global_warming|^know_about_low_carbon",
+      "|^know_about_carbon_neutrality|^know_about_carbon_policy"
+    ),
     file.path(paths$tables, "Table_G.12_weighted_transport.csv")
   )
   export_compact_results(
     models$elec,
     "Table G.13. Weighted Home Energy WTA",
-    "female|is_bachelor|^know_about_low_carbon|^know_about_carbon_neutrality|^know_about_carbon_policy",
+    paste0(
+      "female|is_bachelor|^know_about_low_carbon",
+      "|^know_about_carbon_neutrality|^know_about_carbon_policy"
+    ),
     file.path(paths$tables, "Table_G.13_weighted_home_energy.csv")
   )
   export_compact_results(
     models$green,
     "Table G.14. Weighted Green Electricity WTA",
-    "^location|income_level|^know_about_carbon_neutrality|^know_about_carbon_policy",
+    paste0(
+      "^location|income_level",
+      "|^know_about_carbon_neutrality|^know_about_carbon_policy"
+    ),
     file.path(paths$tables, "Table_G.14_weighted_green_electricity.csv")
   )
 

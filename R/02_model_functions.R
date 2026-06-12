@@ -16,11 +16,12 @@ fit_polr_set <- function(data, outcome, controls, exposure) {
   names(models) <- c("global_warming", "low_carbon", "neutrality", "policy")
 
   for (i in seq_along(knowledge_vars)) {
-    models[[i]] <- MASS::polr(
-      make_model_formula(outcome, controls, exposure, knowledge_vars[[i]]),
-      data = data,
-      Hess = TRUE
-    )
+    f <- make_model_formula(outcome, controls, exposure, knowledge_vars[[i]])
+    m <- MASS::polr(f, data = data, Hess = TRUE)
+    # brant() re-evaluates model$call in the global env; replace the formula slot
+    # with the evaluated formula object so brant can find it without local bindings.
+    m$call$formula <- f
+    models[[i]] <- m
   }
 
   models
@@ -180,7 +181,7 @@ run_brant_tests <- function(models) {
         print(safe_brant(models[[group]][[model_name]]))
       }
     }
-  }, file.path(paths$logs, "brant_tests.txt"))
+  }, file.path(paths$tables, "Table_E.6_brant_tests.txt"))
 }
 
 tidy_ordinal_model <- function(model) {

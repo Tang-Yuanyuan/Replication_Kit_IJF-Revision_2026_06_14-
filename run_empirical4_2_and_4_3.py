@@ -13,8 +13,4 @@ from empirical_4_2_4_3.workflow import main
 
 
 if __name__ == "__main__":
-    print(
-        "Deprecated entry point: use run_empirical4_2_and_4_3.py for Sections 4.2 and 4.3.",
-        file=sys.stderr,
-    )
     main()

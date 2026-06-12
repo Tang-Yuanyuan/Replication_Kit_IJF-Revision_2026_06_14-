@@ -25,8 +25,8 @@ invisible(lapply(
   showWarnings = FALSE
 ))
 
-custom_lib <- "D:/R-4.5.2/Packages"
-if (dir.exists(custom_lib)) {
+custom_lib <- Sys.getenv("R_PACKAGE_DIR", unset = NA_character_)
+if (!is.na(custom_lib) && dir.exists(custom_lib)) {
   .libPaths(unique(c(custom_lib, .libPaths())))
 }
 
@@ -39,11 +39,18 @@ missing_packages <- required_packages[
 ]
 
 if (length(missing_packages) > 0) {
-  stop(
-    "Missing required R packages: ",
-    paste(missing_packages, collapse = ", "),
-    call. = FALSE
-  )
+  message("Installing missing R packages: ", paste(missing_packages, collapse = ", "))
+  install.packages(missing_packages, repos = "https://cloud.r-project.org", quiet = TRUE)
+  still_missing <- missing_packages[
+    !vapply(missing_packages, requireNamespace, logical(1), quietly = TRUE)
+  ]
+  if (length(still_missing) > 0) {
+    stop(
+      "Failed to install R packages: ",
+      paste(still_missing, collapse = ", "),
+      call. = FALSE
+    )
+  }
 }
 
 invisible(lapply(required_packages, library, character.only = TRUE))

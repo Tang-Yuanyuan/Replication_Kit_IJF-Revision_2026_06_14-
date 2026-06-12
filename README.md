@@ -13,15 +13,41 @@ results.
 - `results/empirical4.1/figures/`: generated Section 4.1 figures.
 - `results/empirical4.1/logs/`: Section 4.1 model diagnostics and R session information.
 - `run_all.R`: one-click reproduction script.
-- `run_empirical4_2_3.py`: root-level entry point for Section 4.2 and 4.3.
-- `python/empirical_4_2.py`: implementation script for Section 4.2 and 4.3.
+- `run_empirical4_2_and_4_3.py`: root-level entry point for Sections 4.2 and 4.3.
+- `run_empirical4_2_3.py`: deprecated compatibility entry point that forwards to the new name.
+- `python/empirical_4_2_4_3/`: modular Python implementation for Sections 4.2 and 4.3.
+- `python/empirical_4_2.py`: deprecated compatibility wrapper for older commands.
 - `ENGINEERING_PLAN.md`: current reorganization plan and status.
 - `archive/historical_sources/`: original ad hoc scripts and reference files
   kept for traceability only.
 
-The reproducible workflow uses `run_all.R`, `run_empirical4_2_3.py`, scripts
-under `R/`, and `python/empirical_4_2.py`. Files under
+The reproducible workflow uses `run_all.R`, `run_empirical4_2_and_4_3.py`, scripts
+under `R/`, and the `python/empirical_4_2_4_3/` package. Files under
 `archive/historical_sources/` are not called by the current workflow.
+
+## Setup
+
+Tested environment: **R 4.5.2**, **Python 3.x**.
+
+**Step 1 — Install R packages** (all direct and transitive dependencies,
+pinned to tested versions):
+
+```powershell
+Rscript install.R
+```
+
+**Step 2 — Install Python packages** (all direct and transitive dependencies,
+pinned to tested versions):
+
+```powershell
+pip install -r requirements.txt
+```
+
+`install.R` covers 37 R packages (5 direct + 32 transitive).
+`requirements.txt` covers 22 Python packages (6 direct + 16 transitive).
+
+If a package fails to install at the pinned version, try omitting the version
+pin — the latest CRAN/PyPI release is usually compatible.
 
 ## How to Reproduce
 
@@ -33,19 +59,19 @@ Open R from this folder and run:
 source("run_all.R", encoding = "UTF-8")
 ```
 
-Or run from a terminal:
+Or run from a terminal (cd to the project root first):
 
 ```powershell
-& "D:\R-4.5.2\bin\Rscript.exe" "D:\RUC\revision_package\run_all.R"
+Rscript run_all.R
 ```
 
-Then reproduce Section 4.2:
+Then reproduce Sections 4.2 and 4.3:
 
 ```powershell
-& "D:\Python\python.exe" "D:\RUC\revision_package\run_empirical4_2_3.py" --root "D:\RUC\revision_package"
+python run_empirical4_2_and_4_3.py
 ```
 
-The default Section 4.2 command uses 50 Optuna trials for preference-alternative
+The default Sections 4.2 and 4.3 command uses 50 Optuna trials for preference-alternative
 classification, 100 Optuna trials for WTA regression, 1000 random-baseline Monte
 Carlo draws, and 200 knowledge-growth simulation repetitions.
 
@@ -53,7 +79,7 @@ To rerun Section 4.2 with the original WTA hyperparameters fixed, write the
 outputs to a separate directory:
 
 ```powershell
-& "D:\Python\python.exe" "D:\RUC\revision_package\run_empirical4_2_3.py" --root "D:\RUC\revision_package" --use-legacy-wta-params --output-subdir "empirical4.2_legacy_wta" --skip-simulation
+python run_empirical4_2_and_4_3.py --use-legacy-wta-params --output-subdir "empirical4.2_legacy_wta" --skip-simulation
 ```
 
 This mode keeps the preference-alternative XGBoost classifiers on the seeded
@@ -63,21 +89,34 @@ reported in `Table_D.2_xgboost_hyperparameters`.
 For a faster smoke test of the Section 4.2 workflow:
 
 ```powershell
-& "D:\Python\python.exe" "D:\RUC\revision_package\run_empirical4_2_3.py" --root "D:\RUC\revision_package" --n-trials 1 --reg-n-trials 1 --cv 2 --random-iterations 5
+python run_empirical4_2_and_4_3.py --n-trials 1 --reg-n-trials 1 --cv 2 --random-iterations 5
 ```
 
 ## R Environment
 
-The scripts add this local package library when it exists:
+All paths in the scripts are resolved relative to the project root at runtime.
+No hard-coded machine-specific paths are required.
 
-```r
-.libPaths(c("D:/R-4.5.2/Packages", .libPaths()))
+If your R packages are installed in a non-standard location, set the environment
+variable `R_PACKAGE_DIR` before running:
+
+```powershell
+$env:R_PACKAGE_DIR = "C:\path\to\your\R\packages"
+Rscript run_all.R
 ```
 
-The Python script adds this local package directory when it exists:
+If your Python packages are installed in a non-standard location, set the
+environment variable `PYTHON_PACKAGE_DIR` before running:
 
-```python
-sys.path.insert(0, "D:/Python/Packages")
+```powershell
+$env:PYTHON_PACKAGE_DIR = "C:\path\to\your\python\packages"
+python run_empirical4_2_and_4_3.py
+```
+
+If Rscript is not on your PATH, pass it explicitly:
+
+```powershell
+python run_empirical4_2_and_4_3.py --rscript "C:\path\to\R\bin\Rscript.exe"
 ```
 
 Required R packages:
@@ -109,6 +148,7 @@ Key outputs are named to match the manuscript numbering:
 - Figures: `F_B.1.png`, `F_B.2.png`
 - Main tables: `Table_3_main_transport`, `Table_4_main_home_energy`,
   `Table_5_main_green_electricity`
+- Diagnostic tables: `Table_E.6_brant_tests` (proportional odds assumption tests for all ordered logit models)
 - Robustness tables: `Table_F.7_transport_robustness`,
   `Table_F.8_home_energy_conditioner_time`,
   `Table_F.9_green_electricity_importance`

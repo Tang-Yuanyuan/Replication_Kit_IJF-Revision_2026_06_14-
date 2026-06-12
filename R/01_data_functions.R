@@ -17,7 +17,9 @@ relevel_if_present <- function(df, var, ref) {
   df
 }
 
+# nolint start: object_usage_linter.
 load_raw_data <- function(file = paths$raw_data) {
+  # nolint end
   df <- read.csv(file, check.names = FALSE, fileEncoding = "UTF-8")
   standardize_column_names(df)
 }
@@ -47,23 +49,26 @@ prepare_analysis_data <- function(df) {
   df <- relevel_if_present(df, "partymember", "0")
   df <- relevel_if_present(df, "heard_about_global_warming", "no")
 
-  knowledge_levels <- c("never", "heard but do not know", "heard and know", "familiar")
-  for (var in c("know_about_low_carbon", "know_about_carbon_neutrality",
-                "know_about_carbon_policy")) {
+  knowledge_levels <- c(
+    "never", "heard but do not know", "heard and know", "familiar"
+  )
+  for (var in c(
+    "know_about_low_carbon", "know_about_carbon_neutrality",
+    "know_about_carbon_policy"
+  )) {
     if (var %in% names(df)) {
       df[[var]] <- factor(df[[var]], levels = knowledge_levels, ordered = FALSE)
     }
   }
 
-  df <- df %>%
-    mutate(
-      ifpollution = ifelse(aqi >= 101, 1, 0),
-      married = as.numeric(marriage == "married"),
-      age_ln = log(age),
-      living_area_ln = log(living_area),
-      is_bachelor = ifelse(education %in% c("bachelor", "postgraduate"), 1, 0),
-      caruse = ifelse(carusetime == 0, 1, 0)
-    )
+  df$ifpollution <- ifelse(df$aqi >= 101, 1, 0)
+  df$married <- as.numeric(df$marriage == "married")
+  df$age_ln <- log(df$age)
+  df$living_area_ln <- log(df$living_area)
+  df$is_bachelor <- ifelse(
+    df$education %in% c("bachelor", "postgraduate"), 1, 0
+  )
+  df$caruse <- ifelse(df$carusetime == 0, 1, 0)
 
   weather_control <- if ("weather" %in% names(df)) "weather" else "ifsunny"
 
@@ -85,8 +90,8 @@ prepare_analysis_data <- function(df) {
 
 analysis_subsets <- function(df) {
   list(
-    car = subset(df, publictrans < 5),
-    elec = subset(df, conditionernumber == 1),
-    green = subset(df, energy_consume2020 > 1000)
+    car = df[df$publictrans < 5, ],
+    elec = df[df$conditionernumber == 1, ],
+    green = df[df$energy_consume2020 > 1000, ]
   )
 }

@@ -2,20 +2,23 @@ args <- commandArgs(trailingOnly = FALSE)
 file_arg <- grep("^--file=", args, value = TRUE)
 
 if (length(file_arg) > 0) {
-  PROJECT_ROOT <- dirname(normalizePath(sub("^--file=", "", file_arg[[1]]), winslash = "/"))
+  project_root <- dirname(normalizePath(
+    sub("^--file=", "", file_arg[[1]]),
+    winslash = "/"
+  ))
 } else {
-  PROJECT_ROOT <- normalizePath(getwd(), winslash = "/", mustWork = TRUE)
+  project_root <- normalizePath(getwd(), winslash = "/", mustWork = TRUE)
 }
 
-setwd(PROJECT_ROOT)
+setwd(project_root)
 
-source(file.path(PROJECT_ROOT, "R", "00_setup.R"), encoding = "UTF-8")
-source(file.path(PROJECT_ROOT, "R", "01_data_functions.R"), encoding = "UTF-8")
-source(file.path(PROJECT_ROOT, "R", "02_model_functions.R"), encoding = "UTF-8")
-source(file.path(PROJECT_ROOT, "R", "03_descriptives.R"), encoding = "UTF-8")
-source(file.path(PROJECT_ROOT, "R", "04_figures.R"), encoding = "UTF-8")
-source(file.path(PROJECT_ROOT, "R", "05_robustness.R"), encoding = "UTF-8")
-source(file.path(PROJECT_ROOT, "R", "06_weighted.R"), encoding = "UTF-8")
+source(file.path(project_root, "R", "00_setup.R"), encoding = "UTF-8")
+source(file.path(project_root, "R", "01_data_functions.R"), encoding = "UTF-8")
+source(file.path(project_root, "R", "02_model_functions.R"), encoding = "UTF-8")
+source(file.path(project_root, "R", "03_descriptives.R"), encoding = "UTF-8")
+source(file.path(project_root, "R", "04_figures.R"), encoding = "UTF-8")
+source(file.path(project_root, "R", "05_robustness.R"), encoding = "UTF-8")
+source(file.path(project_root, "R", "06_weighted.R"), encoding = "UTF-8")
 
 message("Running empirical Section 4.1 workflow...")
 
@@ -40,10 +43,8 @@ robust_models <- run_robustness_checks(prepared)
 message("Running post-stratified weighted models...")
 weighted_models <- run_weighted_analysis(prepared)
 
-writeLines(
-  capture.output(sessionInfo()),
-  con = file.path(paths$logs, "session_info.txt"),
-  useBytes = TRUE
-)
+writeLines(capture.output(sessionInfo()),
+           con = file.path(paths$logs, "session_info.txt"),
+           useBytes = TRUE)
 
 message("Done. Empirical Section 4.1 results are in: ", paths$empirical4_1)

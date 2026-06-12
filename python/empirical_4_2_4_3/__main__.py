@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from empirical_4_2_4_3.workflow import main
+from .workflow import main
 
 
 if __name__ == "__main__":

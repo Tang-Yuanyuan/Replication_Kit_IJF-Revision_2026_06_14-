@@ -26,7 +26,7 @@ archive/historical_sources
 ```
 
 这些文件只用于追溯原始代码来源，不参与当前复现流程。正式入口只使用
-`run_all.R`、`R/` 下的模块化脚本，以及 `python/empirical_4_2.py`。
+`run_all.R`、`R/` 下的模块化脚本，以及 `python/empirical_4_2_4_3/`。
 
 ### Section 4.1 及主表、附录表
 
@@ -63,7 +63,7 @@ data/temp/energy_wta_with_post_weights.csv
 运行：
 
 ```powershell
-& "D:\Python\python.exe" "D:\RUC\revision_package\run_empirical4_2_3.py" --root "D:\RUC\revision_package"
+& "D:\Python\python.exe" "D:\RUC\revision_package\run_empirical4_2_and_4_3.py" --root "D:\RUC\revision_package"
 ```
 
 默认输出目录：
@@ -87,7 +87,7 @@ results/empirical4.3
 因此当前推荐命令是：
 
 ```powershell
-& "D:\Python\python.exe" "D:\RUC\revision_package\run_empirical4_2_3.py" --root "D:\RUC\revision_package" --use-legacy-wta-params --output-subdir "empirical4.2_legacy_wta" --skip-simulation
+& "D:\Python\python.exe" "D:\RUC\revision_package\run_empirical4_2_and_4_3.py" --root "D:\RUC\revision_package" --use-legacy-wta-params --output-subdir "empirical4.2_legacy_wta" --skip-simulation
 ```
 
 这条命令的含义：
@@ -134,7 +134,7 @@ results/empirical4.2_legacy_wta
 代码位置：
 
 ```text
-python/empirical_4_2.py
+python/empirical_4_2_4_3/
 ```
 
 相关开关：
@@ -171,7 +171,7 @@ np.floor(model.predict(...)).astype(int)
 
 ## 当前脚本状态
 
-`python/empirical_4_2.py` 当前应满足：
+`python/empirical_4_2_4_3/` 当前应满足：
 
 - 默认运行：Pref Alt 和 WTA 都走带 seed 的可复现 Optuna 搜索。
 - 加 `--use-legacy-wta-params`：只有 WTA regressors 使用旧参数，Pref Alt 仍然搜索。
