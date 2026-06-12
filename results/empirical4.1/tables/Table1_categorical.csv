@@ -1,0 +1,45 @@
+"Variable","Category","N","Percent"
+"location","city",432,41.419
+"location","county seat",336,32.215
+"location","rural",275,26.366
+"province","Beijing",110,10.547
+"province","Gansu",96,9.204
+"province","Guangdong",177,16.97
+"province","Guangxi",119,11.409
+"province","Guizhou",100,9.588
+"province","Hebei",113,10.834
+"province","Henan",64,6.136
+"province","Jilin",98,9.396
+"province","Shanxi",112,10.738
+"province","Zhejiang",54,5.177
+"education","uneducated",8,0.767
+"education","associate",303,29.051
+"education","bachelor",228,21.86
+"education","junior high",223,21.381
+"education","postgraduate",9,0.863
+"education","primary",50,4.794
+"education","senior high",222,21.285
+"ifsunny","0",359,34.42
+"ifsunny","1",684,65.58
+"heard_about_global_warming","no",272,26.079
+"heard_about_global_warming","yes and agree",612,58.677
+"heard_about_global_warming","yes but disagree",159,15.244
+"know_about_carbon_neutrality","never",641,61.457
+"know_about_carbon_neutrality","heard but do not know",318,30.489
+"know_about_carbon_neutrality","heard and know",76,7.287
+"know_about_carbon_neutrality","familiar",8,0.767
+"know_about_carbon_policy","never",758,72.675
+"know_about_carbon_policy","heard but do not know",224,21.477
+"know_about_carbon_policy","heard and know",52,4.986
+"know_about_carbon_policy","familiar",9,0.863
+"know_about_low_carbon","never",334,32.023
+"know_about_low_carbon","heard but do not know",486,46.596
+"know_about_low_carbon","heard and know",201,19.271
+"know_about_low_carbon","familiar",22,2.109
+"weekday","Friday",131,12.56
+"weekday","Monday",89,8.533
+"weekday","Saturday",180,17.258
+"weekday","Sunday",152,14.573
+"weekday","Thursday",195,18.696
+"weekday","Tuesday",125,11.985
+"weekday","Wednesday",171,16.395

@@ -1,0 +1,48 @@
+
+======================================================================
+Brant tests: car 
+======================================================================
+
+Model: global_warming 
+[1] "object 'controls' not found"
+
+Model: low_carbon 
+[1] "object 'controls' not found"
+
+Model: neutrality 
+[1] "object 'controls' not found"
+
+Model: policy 
+[1] "object 'controls' not found"
+
+======================================================================
+Brant tests: elec 
+======================================================================
+
+Model: global_warming 
+[1] "object 'controls' not found"
+
+Model: low_carbon 
+[1] "object 'controls' not found"
+
+Model: neutrality 
+[1] "object 'controls' not found"
+
+Model: policy 
+[1] "object 'controls' not found"
+
+======================================================================
+Brant tests: green 
+======================================================================
+
+Model: global_warming 
+[1] "object 'controls' not found"
+
+Model: low_carbon 
+[1] "object 'controls' not found"
+
+Model: neutrality 
+[1] "object 'controls' not found"
+
+Model: policy 
+[1] "object 'controls' not found"

@@ -8,9 +8,9 @@ empirical results.
 - `data/raw/energy_wta.csv`: analysis data used by the scripts.
 - `R/`: modular R scripts for data preparation, models, figures, robustness
   checks, and weighted analysis.
-- `results/tables/`: generated CSV and LaTeX tables.
-- `results/figures/`: generated figures.
-- `results/logs/`: model diagnostics and R session information.
+- `results/empirical4.1/tables/`: generated Section 4.1 CSV and LaTeX tables.
+- `results/empirical4.1/figures/`: generated Section 4.1 figures.
+- `results/empirical4.1/logs/`: Section 4.1 model diagnostics and R session information.
 - `run_all.R`: one-click reproduction script.
 - `python/empirical_4_2.py`: reproduction script for Section 4.2 and 4.3.
 - `archive/historical_sources/`: original ad hoc scripts and reference files
@@ -94,7 +94,7 @@ Required Python packages:
 - `optuna`
 - `matplotlib`
 
-After the run, `results/logs/session_info.txt` records the exact R session.
+After the run, `results/empirical4.1/logs/session_info.txt` records the exact R session.
 
 ## Numbered Outputs
 

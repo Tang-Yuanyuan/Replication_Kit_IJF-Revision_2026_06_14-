@@ -17,8 +17,10 @@ source(file.path(PROJECT_ROOT, "R", "04_figures.R"), encoding = "UTF-8")
 source(file.path(PROJECT_ROOT, "R", "05_robustness.R"), encoding = "UTF-8")
 source(file.path(PROJECT_ROOT, "R", "06_weighted.R"), encoding = "UTF-8")
 
+message("Running empirical Section 4.1 workflow...")
+
 message("Loading and preparing data...")
-raw_data <- load_raw_data()
+raw_data <- load_raw_data()f
 prepared <- prepare_analysis_data(raw_data)
 
 message("Writing descriptive tables...")
@@ -44,4 +46,4 @@ writeLines(
   useBytes = TRUE
 )
 
-message("Done. Results are in: ", paths$results)
+message("Done. Empirical Section 4.1 results are in: ", paths$empirical4_1)

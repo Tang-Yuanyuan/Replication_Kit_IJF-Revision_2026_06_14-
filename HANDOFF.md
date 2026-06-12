@@ -38,19 +38,19 @@ archive/historical_sources
 
 主要输出：
 
-- `results/figures/F_B.1.png`
-- `results/figures/F_B.2.png`
-- `results/tables/Table_3_main_transport.*`
-- `results/tables/Table_4_main_home_energy.*`
-- `results/tables/Table_5_main_green_electricity.*`
-- `results/tables/Table_F.7_transport_robustness.*`
-- `results/tables/Table_F.8_home_energy_conditioner_time.*`
-- `results/tables/Table_F.9_green_electricity_importance.*`
-- `results/tables/Table_G.10_unweighted_balance.*`
-- `results/tables/Table_G.11_weighted_balance_test.*`
-- `results/tables/Table_G.12_weighted_transport.*`
-- `results/tables/Table_G.13_weighted_home_energy.*`
-- `results/tables/Table_G.14_weighted_green_electricity.*`
+- `results/empirical4.1/figures/F_B.1.png`
+- `results/empirical4.1/figures/F_B.2.png`
+- `results/empirical4.1/tables/Table_3_main_transport.*`
+- `results/empirical4.1/tables/Table_4_main_home_energy.*`
+- `results/empirical4.1/tables/Table_5_main_green_electricity.*`
+- `results/empirical4.1/tables/Table_F.7_transport_robustness.*`
+- `results/empirical4.1/tables/Table_F.8_home_energy_conditioner_time.*`
+- `results/empirical4.1/tables/Table_F.9_green_electricity_importance.*`
+- `results/empirical4.1/tables/Table_G.10_unweighted_balance.*`
+- `results/empirical4.1/tables/Table_G.11_weighted_balance_test.*`
+- `results/empirical4.1/tables/Table_G.12_weighted_transport.*`
+- `results/empirical4.1/tables/Table_G.13_weighted_home_energy.*`
+- `results/empirical4.1/tables/Table_G.14_weighted_green_electricity.*`
 
 该流程会生成 Section 4.2 需要的加权数据：
 
@@ -189,7 +189,7 @@ R 辅助脚本已经支持自定义结果子目录：
 - `results/empirical4.2`：默认带 seed 的完整流程结果。
 - `results/empirical4.2_legacy_wta`：只固定 WTA 旧参数的结果，当前用户希望看的就是这个。
 - `results/empirical4.3`：默认 Section 4.3 知识增长模拟结果。
-- `results/figures`、`results/tables`、`results/logs`：Section 4.1 的正式输出。
+- `results/empirical4.1/figures`、`results/empirical4.1/tables`、`results/empirical4.1/logs`：Section 4.1 的正式输出。
 
 已经清理掉的测试目录：
 

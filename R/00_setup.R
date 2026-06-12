@@ -4,17 +4,24 @@ if (!exists("PROJECT_ROOT", inherits = TRUE)) {
   PROJECT_ROOT <- normalizePath(getwd(), winslash = "/", mustWork = TRUE)
 }
 
+EMPIRICAL_SECTION <- "empirical4.1"
+
 paths <- list(
   root = PROJECT_ROOT,
   raw_data = file.path(PROJECT_ROOT, "data", "raw", "energy_wta.csv"),
   results = file.path(PROJECT_ROOT, "results"),
-  tables = file.path(PROJECT_ROOT, "results", "tables"),
-  figures = file.path(PROJECT_ROOT, "results", "figures"),
-  logs = file.path(PROJECT_ROOT, "results", "logs")
+  empirical4_1 = file.path(PROJECT_ROOT, "results", EMPIRICAL_SECTION),
+  tables = file.path(PROJECT_ROOT, "results", EMPIRICAL_SECTION, "tables"),
+  figures = file.path(PROJECT_ROOT, "results", EMPIRICAL_SECTION, "figures"),
+  logs = file.path(PROJECT_ROOT, "results", EMPIRICAL_SECTION, "logs")
 )
 
-invisible(lapply(paths[c("results", "tables", "figures", "logs")], dir.create,
-                 recursive = TRUE, showWarnings = FALSE))
+invisible(lapply(
+  paths[c("results", "empirical4_1", "tables", "figures", "logs")],
+  dir.create,
+  recursive = TRUE,
+  showWarnings = FALSE
+))
 
 custom_lib <- "D:/R-4.5.2/Packages"
 if (dir.exists(custom_lib)) {
