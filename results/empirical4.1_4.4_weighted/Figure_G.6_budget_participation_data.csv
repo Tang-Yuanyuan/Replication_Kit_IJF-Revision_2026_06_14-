@@ -1,0 +1,7 @@
+﻿Group,1000,2000,3000,4000
+1. Ideal (Theoretical Max),183.0,212.0,232.0,250.0
+2.1 XGBoost (All Features),47.0,80.0,112.0,155.0
+2.2 XGBoost (Demos Only),43.0,85.0,115.0,154.0
+3.1 Ordered Logit (All Features),30.0,70.0,111.0,160.0
+3.2 Ordered Logit (Demos Only),38.0,70.0,110.0,154.0
+4. Random (1000x Mean),30.53,64.492,103.549,136.405
