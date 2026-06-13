@@ -49,20 +49,20 @@ ic_lines <- function(models) {
   )
 }
 
-# svyolr inherits from polr but doesn't register a logLik method, so AIC()/BIC()
-# dispatch fails. Fall back to computing from the stored $logLik field directly.
+# svyolr doesn't register a logLik S3 method, so AIC()/BIC() dispatch fails.
+# Fall back to the same formula summary.polr uses internally: deviance + 2*edf.
+# Using m$edf (stored by polr, preserved by svyolr) guarantees the value matches
+# what R prints in summary(), avoiding any discrepancy reviewers might notice.
 polr_aic <- function(m) {
   tryCatch(AIC(m), error = function(e) {
-    k <- length(coef(m)) + length(m$zeta)
-    m$deviance + 2 * k
+    m$deviance + 2 * m$edf
   })
 }
 
 polr_bic <- function(m) {
   tryCatch(BIC(m), error = function(e) {
-    k <- length(coef(m)) + length(m$zeta)
     n <- nrow(m$fitted.values)
-    m$deviance + log(n) * k
+    m$deviance + log(n) * m$edf
   })
 }
 
