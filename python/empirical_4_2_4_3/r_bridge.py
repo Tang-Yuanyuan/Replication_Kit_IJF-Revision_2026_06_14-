@@ -39,3 +39,23 @@ def run_r_simulated_predictions(
     script = root / "R" / "09_simulated_predictions_4_3.R"
     _run([str(rscript), str(script), str(root), train_subdir, sim_subdir])
 
+
+def run_r_logit_weighted(root: Path, rscript: Path, read_subdir: str, write_subdir: str) -> None:
+    script = root / "R" / "07_logit_4_2_weighted.R"
+    _run([str(rscript), str(script), str(root), read_subdir, write_subdir])
+
+
+def run_r_ologit_wta_weighted(root: Path, rscript: Path, read_subdir: str, write_subdir: str) -> None:
+    script = root / "R" / "08_ologit_wta_4_2_weighted.R"
+    _run([str(rscript), str(script), str(root), read_subdir, write_subdir])
+
+
+def run_r_simulated_predictions_weighted(
+    root: Path,
+    rscript: Path,
+    train_subdir: str,
+    sim_subdir: str,
+) -> None:
+    script = root / "R" / "09_simulated_predictions_4_3_weighted.R"
+    _run([str(rscript), str(script), str(root), train_subdir, sim_subdir])
+

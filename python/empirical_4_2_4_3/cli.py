@@ -69,6 +69,16 @@ def parse_args() -> argparse.Namespace:
         help="Skip the Section 4.3 knowledge-growth simulation.",
     )
     parser.add_argument(
+        "--weighted",
+        action="store_true",
+        help="Also run post-stratification weighted analysis (Sections 4.2 and 4.3, Appendix G).",
+    )
+    parser.add_argument(
+        "--weighted-output-subdir",
+        default="empirical4.2_weighted",
+        help="Subdirectory under results/ for weighted Section 4.2 outputs.",
+    )
+    parser.add_argument(
         "--rscript",
         type=Path,
         default=_find_rscript(),

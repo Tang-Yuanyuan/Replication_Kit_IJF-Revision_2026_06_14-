@@ -15,6 +15,7 @@ def train_xgb_model_bayesian(
     group_type: str = "All",
     n_trials: int = 50,
     cv: int = 3,
+    sample_weight: "np.ndarray | None" = None,
 ) -> xgb.XGBClassifier:
     def objective(trial: optuna.Trial) -> float:
         params = {
@@ -29,7 +30,8 @@ def train_xgb_model_bayesian(
             "n_jobs": 1,
         }
         model = xgb.XGBClassifier(**params)
-        return cross_val_score(model, train_x, train_y, cv=cv, scoring="accuracy").mean()
+        cv_kwargs = {"fit_params": {"sample_weight": sample_weight}} if sample_weight is not None else {}
+        return cross_val_score(model, train_x, train_y, cv=cv, scoring="accuracy", **cv_kwargs).mean()
 
     study = optuna.create_study(
         direction="maximize",
@@ -46,7 +48,8 @@ def train_xgb_model_bayesian(
         "n_jobs": -1,
     }
     model = xgb.XGBClassifier(**final_params)
-    model.fit(train_x, train_y)
+    fit_kwargs = {"sample_weight": sample_weight} if sample_weight is not None else {}
+    model.fit(train_x, train_y, **fit_kwargs)
     return model
 
 def train_xgb_regressor_bayesian(
@@ -55,6 +58,7 @@ def train_xgb_regressor_bayesian(
     group_type: str = "All",
     n_trials: int = 50,
     cv: int = 3,
+    sample_weight: "np.ndarray | None" = None,
 ) -> xgb.XGBRegressor:
     def objective(trial: optuna.Trial) -> float:
         params = {
@@ -68,12 +72,14 @@ def train_xgb_regressor_bayesian(
             "n_jobs": 1,
         }
         model = xgb.XGBRegressor(**params)
+        cv_kwargs = {"fit_params": {"sample_weight": sample_weight}} if sample_weight is not None else {}
         return cross_val_score(
             model,
             train_x,
             train_y,
             cv=cv,
             scoring="neg_mean_squared_error",
+            **cv_kwargs,
         ).mean()
 
     study = optuna.create_study(
@@ -90,7 +96,8 @@ def train_xgb_regressor_bayesian(
         "n_jobs": -1,
     }
     model = xgb.XGBRegressor(**final_params)
-    model.fit(train_x, train_y)
+    fit_kwargs = {"sample_weight": sample_weight} if sample_weight is not None else {}
+    model.fit(train_x, train_y, **fit_kwargs)
     return model
 
 def train_xgb_regressor_fixed(
