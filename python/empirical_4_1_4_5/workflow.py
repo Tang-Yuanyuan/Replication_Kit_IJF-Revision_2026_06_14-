@@ -638,7 +638,7 @@ def _run(args, root: Path) -> None:
             _wenergy = _wname.split("_")[0]
             w_trained_models[_wname] = train_xgb_model_bayesian(
                 _wdf[_wfeat], _wdf[_wyc],
-                group_type=_wgt, n_trials=args.n_trials, cv=args.cv,
+                group_type=_wgt, n_trials=args.weighted_n_trials, cv=args.cv,
                 sample_weight=_w_by_energy[_wenergy], weighted=True,
             )
         print(f"Done ({_fmt(time.perf_counter() - _t)})")
@@ -650,7 +650,7 @@ def _run(args, root: Path) -> None:
             _wenergy = _wname.split("_")[0]
             w_trained_models_reg[_wname] = train_xgb_regressor_bayesian(
                 _wdf[_wfeat], _wdf[_wyc],
-                group_type=_wgt, n_trials=args.reg_n_trials, cv=args.cv,
+                group_type=_wgt, n_trials=args.weighted_reg_n_trials, cv=args.cv,
                 sample_weight=_w_by_energy[_wenergy], weighted=True,
             )
         print(f"Done ({_fmt(time.perf_counter() - _t)})")

@@ -88,6 +88,18 @@ def parse_args() -> argparse.Namespace:
         help="Also run post-stratification weighted analysis (Sections 4.1–4.5, Appendix G).",
     )
     parser.add_argument(
+        "--weighted-n-trials",
+        type=int,
+        default=20,
+        help="Optuna trials for each weighted XGBoost classifier (default: 20).",
+    )
+    parser.add_argument(
+        "--weighted-reg-n-trials",
+        type=int,
+        default=20,
+        help="Optuna trials for each weighted XGBoost WTA regressor (default: 20).",
+    )
+    parser.add_argument(
         "--weighted-output-subdir",
         default="empirical4.1_4.4_weighted",
         help="Subdirectory under results/ for weighted Sections 4.1–4.4 outputs.",
