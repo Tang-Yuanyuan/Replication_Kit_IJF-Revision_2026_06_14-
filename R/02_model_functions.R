@@ -198,15 +198,18 @@ run_brant_e6 <- function(models, prepared) {
                           "know_about_carbon_policy",     subsets$green)
 
   omnibus <- function(model) {
-    res <- tryCatch(
-      withCallingHandlers(
-        brant::brant(model),
-        warning = function(w) invokeRestart("muffleWarning")
-      ),
-      error = function(e) {
-        warning("brant error: ", e$message)
-        NULL
-      }
+    res <- NULL
+    utils::capture.output(
+      res <- tryCatch(
+        withCallingHandlers(
+          brant::brant(model),
+          warning = function(w) invokeRestart("muffleWarning")
+        ),
+        error = function(e) {
+          warning("brant error: ", e$message)
+          NULL
+        }
+      )
     )
     if (is.null(res) || !is.matrix(res) || nrow(res) == 0) {
       return(c(Chi2 = NA_real_, DF = NA_integer_, P_value = NA_real_))
@@ -287,20 +290,6 @@ export_compact_results <- function(model_list, group_name, keep_pattern, file) {
     }
     final_tab[[labels[[i]]]] <- values
   }
-
-  add_stat_row <- function(label, fun) {
-    vals <- vapply(model_list, function(m) as.character(fun(m)), character(1))
-    row <- as.data.frame(as.list(c(label, vals)), stringsAsFactors = FALSE)
-    names(row) <- names(final_tab)
-    row
-  }
-
-  final_tab <- rbind(
-    final_tab,
-    add_stat_row("N",   function(m) length(m$fitted.values)),
-    add_stat_row("AIC", function(m) round(AIC(m), 2)),
-    add_stat_row("BIC", function(m) round(BIC(m), 2))
-  )
 
   write.csv(final_tab, file = file, row.names = FALSE, fileEncoding = "UTF-8")
   tex_file <- sub("\\.csv$", ".tex", file)

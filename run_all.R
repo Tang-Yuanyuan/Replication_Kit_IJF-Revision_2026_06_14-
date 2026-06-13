@@ -32,6 +32,7 @@ run_descriptive_tables(prepared$data)
 message("Estimating main ordered logit models...")
 main_models <- fit_main_models(prepared)
 export_main_model_tables(main_models, prepared)
+message("Running Brant tests...")
 run_brant_e6(main_models, prepared)
 
 message("Drawing figures...")
