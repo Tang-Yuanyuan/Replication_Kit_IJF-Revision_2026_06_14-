@@ -50,7 +50,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--output-subdir",
-        default="empirical4.1",
+        default="empirical4.1_4.4",
         help="Subdirectory under results/ for Sections 4.1–4.4 outputs.",
     )
     parser.add_argument(
@@ -75,7 +75,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--weighted-output-subdir",
-        default="empirical4.1_weighted",
+        default="empirical4.1_4.4_weighted",
         help="Subdirectory under results/ for weighted Sections 4.1–4.4 outputs.",
     )
     parser.add_argument(

@@ -238,7 +238,7 @@ def _run(args, root: Path) -> None:
         "XGBoost algorithm II": clean_pct(final_df_xgb.loc["All", "Perfect_Rate"]) * 100,
     }
     accuracy_series = pd.Series(accuracy_data)
-    accuracy_series.to_csv(output_dir / "Figure_3_prediction_accuracy_data.csv", header=["Accuracy"])
+    accuracy_series.to_csv(output_dir / "Table_D.2_prediction_accuracy.csv", header=["Accuracy"])
 
     fig, ax = plt.subplots(figsize=(10, 6), dpi=120)
     x_pos = np.arange(len(accuracy_series))
@@ -300,23 +300,11 @@ def _run(args, root: Path) -> None:
         },
     }
     df_plot = pd.DataFrame([raw_plot_data[key] for key in ordered_keys], index=labels).apply(pd.to_numeric)
-    df_plot.to_csv(output_dir / "Table_D.2_assignment_outcomes.csv", encoding="utf-8-sig")
+    df_plot.to_csv(output_dir / "Table_D.3_assignment_outcomes.csv", encoding="utf-8-sig")
     write_latex_table(
         df_plot,
-        output_dir / "Table_D.2_assignment_outcomes.tex",
-        "Table D.2. Assignment Outcomes",
-    )
-
-    _d3 = df_plot.reset_index().rename(columns={
-        "index": "Method",
-        "Rate": "Acceptance Rate (%)",
-        "Cost": "Average Compensation (¥)",
-    })
-    _d3.to_csv(output_dir / "Table_D.3_figure4_data.csv", index=False, encoding="utf-8-sig")
-    write_latex_table(
-        _d3.set_index("Method"),
-        output_dir / "Table_D.3_figure4_data.tex",
-        "Table D.3. Figure 4 Assignment Outcomes by Method",
+        output_dir / "Table_D.3_assignment_outcomes.tex",
+        "Table D.3. Assignment Outcomes",
     )
 
     all_metrics = pd.concat(
@@ -328,8 +316,6 @@ def _run(args, root: Path) -> None:
         ],
         axis=0,
     )
-    all_metrics.to_csv(output_dir / "empirical_4.1_metrics.csv", encoding="utf-8-sig")
-
     fig, ax1 = plt.subplots(figsize=(12, 7), dpi=120)
     ax2 = ax1.twinx()
     x_pos = np.arange(len(labels))
@@ -619,7 +605,7 @@ def _run(args, root: Path) -> None:
     if args.weighted:
         _wN = 4 if args.skip_simulation else 6
         w_subdir = args.weighted_output_subdir
-        w_sim_subdir = w_subdir.replace("4.1", "4.5")
+        w_sim_subdir = sim_output_subdir + "_weighted"
         w_output_dir = root / "results" / w_subdir
         w_output_dir.mkdir(parents=True, exist_ok=True)
         w_temp_dir = temp_root / w_subdir
