@@ -604,6 +604,14 @@ def _run(args, root: Path) -> None:
 
         print(f"  Done ({_fmt(time.perf_counter() - _t6)})")
 
+    # When main steps were skipped, recompute the lightweight variables the
+    # weighted block depends on (ideal results and fixed quota/budget lists).
+    if _skip_main:
+        results_ideal = get_ideal_results(test_encoded)
+        final_df_ideal = calculate_metrics(results_ideal, results_ideal).iloc[[0]].copy()
+        current_n_list = [55, 100, 145]
+        current_budgets = [1000, 2000, 3000, 4000]
+
     # ── Weighted Sections 4.1–4.4 analysis ────────────────────────────────────
     if args.weighted:
         _wN = 4 if args.skip_simulation else 6
