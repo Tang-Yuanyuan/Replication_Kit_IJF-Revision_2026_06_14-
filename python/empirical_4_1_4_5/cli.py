@@ -64,6 +64,20 @@ def parse_args() -> argparse.Namespace:
         help="Use the original WTA hyperparameters recorded in the manuscript table.",
     )
     parser.add_argument(
+        "--also-legacy",
+        action="store_true",
+        help="Always run the legacy WTA comparison without prompting.",
+    )
+    parser.add_argument(
+        "--skip-main",
+        action="store_true",
+        help=(
+            "Skip the main (unweighted) analysis Steps 2–7. "
+            "Useful when outputs already exist and you only want --weighted "
+            "and/or --also-legacy re-runs."
+        ),
+    )
+    parser.add_argument(
         "--skip-simulation",
         action="store_true",
         help="Skip the Section 4.5 knowledge-growth simulation.",

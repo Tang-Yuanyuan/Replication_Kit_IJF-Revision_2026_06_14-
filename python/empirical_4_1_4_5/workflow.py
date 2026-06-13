@@ -68,17 +68,19 @@ def main() -> None:
         ans = input("Also run weighted analysis (Appendix G)? [y/N] ").strip().lower()
         args.weighted = ans in ("y", "yes")
 
-    _also_legacy = False
-    if not args.use_legacy_wta_params:
+    _also_legacy = args.also_legacy
+    if not args.use_legacy_wta_params and not args.also_legacy:
         ans = input("Also run legacy WTA comparison? [y/N] ").strip().lower()
         _also_legacy = ans in ("y", "yes")
 
-    _run(args, root)
+    if not args.skip_main or args.weighted:
+        _run(args, root)
 
     if _also_legacy:
         legacy_args = copy.copy(args)
         legacy_args.use_legacy_wta_params = True
         legacy_args.weighted = False
+        legacy_args.skip_main = False
         legacy_args.output_subdir = args.output_subdir + "_legacy_wta"
         legacy_args.sim_output_subdir = (
             args.sim_output_subdir or "empirical4.5"
@@ -143,19 +145,6 @@ def _run(args, root: Path) -> None:
         ("Green_All", train_green, "y_green", feature_sets["demos_all_green"], "All"),
     ]
 
-    print(f"\n[Step 2/7] Training PrefAlt XGBoost models...")
-    _t = time.perf_counter()
-    trained_models: dict[str, xgb.XGBClassifier] = {}
-    for _i, (name, train_df, y_col, features, group_type) in enumerate(train_tasks, 1):
-        trained_models[name] = train_xgb_model_bayesian(
-            train_df[features],
-            train_df[y_col],
-            group_type=group_type,
-            n_trials=args.n_trials,
-            cv=args.cv,
-        )
-    print(f"  Done ({_fmt(time.perf_counter() - _t)})")
-
     reg_tasks = [
         ("Car_Demos_Reg", train_car, "wta_car", feature_sets["demos_car"], "Demos"),
         ("Car_All_Reg", train_car, "wta_car", feature_sets["demos_all_car"], "All"),
@@ -165,439 +154,455 @@ def _run(args, root: Path) -> None:
         ("Green_All_Reg", train_green, "wta_green", feature_sets["demos_all_green"], "All"),
     ]
 
-    print(f"\n[Step 3/7] Training WTA XGBoost models...")
-    _t = time.perf_counter()
-    trained_models_reg: dict[str, xgb.XGBRegressor] = {}
-    for _i, (name, train_df, y_col, features, group_type) in enumerate(reg_tasks, 1):
-        if use_legacy_wta:
-            model = train_xgb_regressor_fixed(
-                train_df[features],
-                train_df[y_col],
-                LEGACY_WTA_PARAMS[name],
-            )
-        else:
-            model = train_xgb_regressor_bayesian(
+
+    _skip_main = getattr(args, 'skip_main', False)
+    if not _skip_main:
+        print(f"\n[Step 2/7] Training PrefAlt XGBoost models...")
+        _t = time.perf_counter()
+        trained_models: dict[str, xgb.XGBClassifier] = {}
+        for _i, (name, train_df, y_col, features, group_type) in enumerate(train_tasks, 1):
+            trained_models[name] = train_xgb_model_bayesian(
                 train_df[features],
                 train_df[y_col],
                 group_type=group_type,
-                n_trials=args.reg_n_trials,
+                n_trials=args.n_trials,
                 cv=args.cv,
             )
-        trained_models_reg[name] = model
-    print(f"  Done ({_fmt(time.perf_counter() - _t)})")
+        print(f"  Done ({_fmt(time.perf_counter() - _t)})")
 
-    if use_legacy_wta:
-        (output_dir / "legacy_params_used.txt").write_text(
-            "WTA XGBoost regressors used fixed hyperparameters copied from the original manuscript table.\n"
-            "Pref Alt classifiers were trained through the seeded Optuna workflow.\n",
-            encoding="utf-8",
-        )
+        print(f"\n[Step 3/7] Training WTA XGBoost models...")
+        _t = time.perf_counter()
+        trained_models_reg: dict[str, xgb.XGBRegressor] = {}
+        for _i, (name, train_df, y_col, features, group_type) in enumerate(reg_tasks, 1):
+            if use_legacy_wta:
+                model = train_xgb_regressor_fixed(
+                    train_df[features],
+                    train_df[y_col],
+                    LEGACY_WTA_PARAMS[name],
+                )
+            else:
+                model = train_xgb_regressor_bayesian(
+                    train_df[features],
+                    train_df[y_col],
+                    group_type=group_type,
+                    n_trials=args.reg_n_trials,
+                    cv=args.cv,
+                )
+            trained_models_reg[name] = model
+        print(f"  Done ({_fmt(time.perf_counter() - _t)})")
 
-    df_params = build_combined_hyperparameter_table(trained_models, trained_models_reg)
-    df_params.to_csv(output_dir / "Table_C.1_xgboost_hyperparameters.csv", encoding="utf-8-sig")
-    write_latex_table(
-        df_params,
-        output_dir / "Table_C.1_xgboost_hyperparameters.tex",
-        "Table C.1. XGBoost Hyperparameters",
-    )
-
-    print("\n[Step 4/7] Computing prediction metrics...")
-    _t = time.perf_counter()
-    results_ideal = get_ideal_results(test_encoded)
-    final_df_ideal = calculate_metrics(results_ideal, results_ideal).iloc[[0]].copy()
-    final_df_ideal.index = ["Ideal (Upper Bound)"]
-
-    demos_probs = get_group_probabilities(trained_models, test_encoded, "Demos")
-    all_probs = get_group_probabilities(trained_models, test_encoded, "All")
-    results_xgb_demos = get_processed_results(demos_probs, test_encoded, threshold=0)
-    results_xgb_all = get_processed_results(all_probs, test_encoded, threshold=0)
-    final_df_xgb = calculate_metrics(results_xgb_demos, results_xgb_all)
-    print(f"  Done ({_fmt(time.perf_counter() - _t)})")
-
-    print("\n[Step 5/7] Running R logit models...")
-    _t = time.perf_counter()
-    run_r_logit(root, args.rscript, args.output_subdir)
-    logit_demos = pd.read_csv(temp_dir / "logit_probs_demos.csv")
-    logit_all = pd.read_csv(temp_dir / "logit_probs_all.csv")
-    logit_demos.index = test_encoded.index
-    logit_all.index = test_encoded.index
-
-    results_eco_demos = get_processed_results(logit_demos, test_encoded, threshold=0)
-    results_eco_all = get_processed_results(logit_all, test_encoded, threshold=0)
-    final_df_eco = calculate_metrics(results_eco_demos, results_eco_all)
-    final_df_random = run_monte_carlo_random(test_encoded, n_iterations=args.random_iterations)
-    print(f"  Done ({_fmt(time.perf_counter() - _t)})")
-
-    print("\n[Step 6/7] Generating Sections 4.1–4.4 figures and tables...")
-    _t6 = time.perf_counter()
-
-    accuracy_data = {
-        "Logistic regression I": clean_pct(final_df_eco.loc["Demos", "Perfect_Rate"]) * 100,
-        "Logistic regression II": clean_pct(final_df_eco.loc["All", "Perfect_Rate"]) * 100,
-        "XGBoost algorithm I": clean_pct(final_df_xgb.loc["Demos", "Perfect_Rate"]) * 100,
-        "XGBoost algorithm II": clean_pct(final_df_xgb.loc["All", "Perfect_Rate"]) * 100,
-    }
-    accuracy_series = pd.Series(accuracy_data)
-    accuracy_series.to_csv(output_dir / "Table_D.2_prediction_accuracy.csv", header=["Accuracy"])
-
-    fig, ax = plt.subplots(figsize=(10, 6), dpi=120)
-    x_pos = np.arange(len(accuracy_series))
-    bars = ax.bar(x_pos, accuracy_series.values, 0.4, color="black")
-    ax.set_ylim(60, max(accuracy_series.max() + 2, 62))
-    ax.set_ylabel("Prediction Accuracy (%)", fontsize=12)
-    ax.set_xticks(x_pos)
-    ax.set_xticklabels(accuracy_series.index, rotation=15, ha="right", fontsize=11)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    for bar in bars:
-        height = bar.get_height()
-        ax.annotate(
-            f"{height:.2f}%",
-            xy=(bar.get_x() + bar.get_width() / 2, height),
-            xytext=(0, 5),
-            textcoords="offset points",
-            ha="center",
-            va="bottom",
-            fontsize=11,
-        )
-    fig.tight_layout()
-    fig.savefig(output_dir / "Figure_3_prediction_accuracy.png", bbox_inches="tight", dpi=300)
-    plt.close(fig)
-
-    ordered_keys = ["Random", "Logit_All", "Logit_Demos", "XGB_All", "XGB_Demos", "Ideal"]
-    labels = [
-        "Random assignment",
-        "Logistic regression II",
-        "Logistic regression I",
-        "XGBoost algorithm II",
-        "XGBoost algorithm I",
-        "Perfect assignment",
-    ]
-    raw_plot_data = {
-        "Random": {
-            "Rate": clean_pct(final_df_random["Accept_Rate"].iloc[0]) * 100,
-            "Cost": clean_pct(final_df_random["Accept_Cost"].iloc[0]),
-        },
-        "Logit_Demos": {
-            "Rate": clean_pct(final_df_eco.loc["Demos", "Accept_Rate"]) * 100,
-            "Cost": clean_pct(final_df_eco.loc["Demos", "Accept_Cost"]),
-        },
-        "Logit_All": {
-            "Rate": clean_pct(final_df_eco.loc["All", "Accept_Rate"]) * 100,
-            "Cost": clean_pct(final_df_eco.loc["All", "Accept_Cost"]),
-        },
-        "XGB_Demos": {
-            "Rate": clean_pct(final_df_xgb.loc["Demos", "Accept_Rate"]) * 100,
-            "Cost": clean_pct(final_df_xgb.loc["Demos", "Accept_Cost"]),
-        },
-        "XGB_All": {
-            "Rate": clean_pct(final_df_xgb.loc["All", "Accept_Rate"]) * 100,
-            "Cost": clean_pct(final_df_xgb.loc["All", "Accept_Cost"]),
-        },
-        "Ideal": {
-            "Rate": clean_pct(final_df_ideal["Accept_Rate"].iloc[0]) * 100,
-            "Cost": clean_pct(final_df_ideal["Accept_Cost"].iloc[0]),
-        },
-    }
-    df_plot = pd.DataFrame([raw_plot_data[key] for key in ordered_keys], index=labels).apply(pd.to_numeric)
-    df_plot.to_csv(output_dir / "Table_D.3_assignment_outcomes.csv", encoding="utf-8-sig")
-    write_latex_table(
-        df_plot,
-        output_dir / "Table_D.3_assignment_outcomes.tex",
-        "Table D.3. Assignment Outcomes",
-    )
-
-    all_metrics = pd.concat(
-        [
-            format_metrics_table(final_df_random),
-            format_metrics_table(final_df_eco),
-            format_metrics_table(final_df_xgb),
-            format_metrics_table(final_df_ideal),
-        ],
-        axis=0,
-    )
-    fig, ax1 = plt.subplots(figsize=(12, 7), dpi=120)
-    ax2 = ax1.twinx()
-    x_pos = np.arange(len(labels))
-    width = 0.4
-    x_offset = 0.2
-    bars = ax1.bar(
-        x_pos,
-        df_plot["Cost"],
-        width,
-        color="#d9d9d9",
-        edgecolor="black",
-        label="Average Compensation",
-    )
-    ax2.plot(
-        x_pos + x_offset,
-        df_plot["Rate"],
-        color="#7f7f7f",
-        marker="o",
-        linestyle="--",
-        linewidth=2,
-        markersize=8,
-        label="Acceptance Rate",
-        zorder=5,
-    )
-    ax1.set_ylim(df_plot["Cost"].min() - 2, df_plot["Cost"].max() + 2)
-    ax2.set_ylim(df_plot["Rate"].min() - 2, 100)
-    ax1.set_ylabel("Average Compensation (¥)", fontsize=12)
-    ax2.set_ylabel("Acceptance Rate (%)", fontsize=12)
-    ax1.set_xticks(x_pos)
-    ax1.set_xticklabels(labels, rotation=25, ha="right")
-    ax1.spines["top"].set_visible(False)
-    ax1.spines["right"].set_visible(False)
-    ax2.spines["top"].set_visible(False)
-    ax2.spines["left"].set_visible(False)
-
-    for i, bar in enumerate(bars):
-        ax1.annotate(
-            f"{df_plot['Cost'].iloc[i]:.2f}",
-            xy=(bar.get_x() + bar.get_width() / 2, bar.get_height()),
-            xytext=(0, 5),
-            textcoords="offset points",
-            ha="center",
-            va="bottom",
-            fontsize=10,
-        )
-    for i in range(len(df_plot)):
-        y_offset = 15 if i == 4 else 12
-        label_x_offset = x_offset + 0.05 if i == 4 else x_offset
-        ax2.annotate(
-            f"{df_plot['Rate'].iloc[i]:.2f}%",
-            xy=(x_pos[i] + label_x_offset, df_plot["Rate"].iloc[i]),
-            xytext=(0, y_offset),
-            textcoords="offset points",
-            ha="center",
-            fontsize=10,
-            color="#444444",
-            weight="bold",
-        )
-
-    h1, l1 = ax1.get_legend_handles_labels()
-    h2, l2 = ax2.get_legend_handles_labels()
-    ax1.legend(h1 + h2, l1 + l2, loc="lower center", bbox_to_anchor=(0.5, -0.3), ncol=2, frameon=False)
-    fig.tight_layout()
-    fig.savefig(output_dir / "Figure_4_assignment_outcomes.png", bbox_inches="tight", dpi=300)
-    plt.close(fig)
-
-    print("  Running R ordered-logit WTA models...")
-    _t = time.perf_counter()
-    run_r_ologit_wta(root, args.rscript, args.output_subdir)
-    print(f"  Done ({_fmt(time.perf_counter() - _t)})")
-    results_xgb_all = append_final_wta_column(results_xgb_all, test_encoded, trained_models_reg, "All")
-    results_xgb_demos = append_final_wta_column(results_xgb_demos, test_encoded, trained_models_reg, "Demos")
-    results_eco_all = update_eco_results_with_floor(results_eco_all, temp_dir / "wta_preds_all.csv")
-    results_eco_demos = update_eco_results_with_floor(results_eco_demos, temp_dir / "wta_preds_demos.csv")
-
-    current_n_list = [55, 100, 145]
-    m_ideal = get_n_household_metrics(results_ideal, test_encoded, n_list=current_n_list)
-    m_xgb_all = get_n_household_metrics(results_xgb_all, test_encoded, n_list=current_n_list)
-    m_xgb_demos = get_n_household_metrics(results_xgb_demos, test_encoded, n_list=current_n_list)
-    m_eco_all = get_n_household_metrics(results_eco_all, test_encoded, n_list=current_n_list)
-    m_eco_demos = get_n_household_metrics(results_eco_demos, test_encoded, n_list=current_n_list)
-    m_random = get_random_baseline_monte_carlo(
-        test_encoded, n_list=current_n_list, iterations=args.random_iterations
-    )
-
-    m_ideal["Group"] = "1. Ideal (Upper Bound)"
-    m_xgb_all["Group"] = "2.1 XGBoost (All)"
-    m_xgb_demos["Group"] = "2.2 XGBoost (Demos)"
-    m_eco_all["Group"] = "3.1 Ordered Logit (All)"
-    m_eco_demos["Group"] = "3.2 Ordered Logit (Demos)"
-    m_random["Group"] = "4. Random (1000x Mean)"
-
-    quota_metrics = pd.concat([m_ideal, m_xgb_all, m_xgb_demos, m_eco_all, m_eco_demos, m_random])
-    quota_pivot = quota_metrics.pivot(index="Group", columns="Quota (N)")
-    quota_cost = quota_pivot.xs("Accept_Cost", axis=1)
-    quota_cost.to_csv(output_dir / "Table_D.4_quota_accept_cost.csv", encoding="utf-8-sig")
-    write_latex_table(
-        quota_cost,
-        output_dir / "Table_D.4_quota_accept_cost.tex",
-        "Table D.4. Average Compensation by Targeted Number of Households",
-    )
-
-    quota_n = quota_cost.columns.tolist()
-    fig, (ax_top, ax_bottom) = plt.subplots(
-        2,
-        1,
-        sharex=True,
-        figsize=(10, 8),
-        gridspec_kw={"height_ratios": [3, 1]},
-        dpi=120,
-    )
-    fig.subplots_adjust(hspace=0.1)
-    styles_quota = {
-        "4. Random (1000x Mean)": {
-            "color": "gray",
-            "linestyle": ":",
-            "marker": "",
-            "label": "Random assignment",
-        },
-        "3.2 Ordered Logit (Demos)": {
-            "color": "gray",
-            "linestyle": "-",
-            "marker": "o",
-            "label": "Logistic regression I",
-        },
-        "2.2 XGBoost (Demos)": {
-            "color": "black",
-            "linestyle": "-",
-            "marker": "o",
-            "label": "XGBoost algorithm I",
-        },
-        "3.1 Ordered Logit (All)": {
-            "color": "gray",
-            "linestyle": "-.",
-            "marker": "^",
-            "label": "Logistic regression II",
-        },
-        "2.1 XGBoost (All)": {
-            "color": "black",
-            "linestyle": "-.",
-            "marker": "^",
-            "label": "XGBoost algorithm II",
-        },
-        "1. Ideal (Upper Bound)": {
-            "color": "black",
-            "linestyle": "--",
-            "marker": "",
-            "label": "Perfect assignment",
-        },
-    }
-    for group_name, style in styles_quota.items():
-        if group_name in quota_cost.index:
-            y_values = quota_cost.loc[group_name].values
-            ax_top.plot(quota_n, y_values, **style, linewidth=1.5, markersize=7)
-            ax_bottom.plot(quota_n, y_values, **style, linewidth=1.5, markersize=7)
-
-    ax_top.set_ylim(20, m_random.loc[0, "Accept_Cost"] + 2)
-    ax_bottom.set_ylim(0, m_ideal.loc[0, "Accept_Cost"] + 5)
-    ax_top.spines["bottom"].set_visible(False)
-    ax_top.spines["top"].set_visible(False)
-    ax_top.spines["right"].set_visible(False)
-    ax_bottom.spines["top"].set_visible(False)
-    ax_bottom.spines["right"].set_visible(False)
-    ax_top.tick_params(labeltop=False)
-    ax_bottom.xaxis.tick_bottom()
-    d = 0.015
-    kwargs = dict(transform=ax_top.transAxes, color="black", clip_on=False)
-    ax_top.plot((-d, +d), (-d, +d), **kwargs)
-    kwargs.update(transform=ax_bottom.transAxes)
-    ax_bottom.plot((-d, +d), (1 - d, 1 + d), **kwargs)
-    fig.text(
-        0.04,
-        0.5,
-        "Compensation Spending (¥/month/household)",
-        va="center",
-        rotation="vertical",
-        fontsize=12,
-    )
-    ax_bottom.set_xlabel("Targeted Numbers of Households", fontsize=12)
-    ax_bottom.set_xticks(quota_n)
-    ax_top.legend(loc="center left", bbox_to_anchor=(1.05, 0.3), frameon=False, fontsize=11)
-    fig.savefig(output_dir / "Figure_5_quota_compensation.png", bbox_inches="tight", dpi=300)
-    plt.close(fig)
-
-    current_budgets = [1000, 2000, 3000, 4000]
-    bm_ideal = get_budget_metrics(results_ideal, test_encoded, budget_list=current_budgets)
-    bm_xgb_all = get_budget_metrics(results_xgb_all, test_encoded, budget_list=current_budgets)
-    bm_xgb_demos = get_budget_metrics(results_xgb_demos, test_encoded, budget_list=current_budgets)
-    bm_eco_all = get_budget_metrics(results_eco_all, test_encoded, budget_list=current_budgets)
-    bm_eco_demos = get_budget_metrics(results_eco_demos, test_encoded, budget_list=current_budgets)
-    bm_random = get_random_budget_baseline_monte_carlo(
-        test_encoded, current_budgets, iterations=args.random_iterations
-    )
-
-    bm_ideal["Group"] = "1. Ideal (Theoretical Max)"
-    bm_xgb_all["Group"] = "2.1 XGBoost (All Features)"
-    bm_xgb_demos["Group"] = "2.2 XGBoost (Demos Only)"
-    bm_eco_all["Group"] = "3.1 Ordered Logit (All Features)"
-    bm_eco_demos["Group"] = "3.2 Ordered Logit (Demos Only)"
-    bm_random["Group"] = "4. Random (1000x Mean)"
-
-    budget_final = pd.concat([bm_ideal, bm_xgb_all, bm_xgb_demos, bm_eco_all, bm_eco_demos, bm_random])
-    budget_pivot = budget_final.pivot(index="Group", columns="Budget_Limit")
-    budget_pivot[("Accept_Rate", "Average")] = budget_pivot["Accept_Rate"].mean(axis=1)
-
-    budget_table = budget_pivot["Total_Recruited (N)"].copy()
-    budget_table["Average Acceptance Rate"] = budget_pivot[("Accept_Rate", "Average")]
-    budget_table.to_csv(output_dir / "Table_D.5_budget_participation.csv", encoding="utf-8-sig")
-    write_latex_table(
-        budget_table,
-        output_dir / "Table_D.5_budget_participation.tex",
-        "Table D.5. Budget-Constrained Participation and Average Acceptance Rate",
-    )
-
-    plot_df = budget_pivot["Total_Recruited (N)"]
-    avg_rates = budget_pivot[("Accept_Rate", "Average")]
-    fig, ax = plt.subplots(figsize=(12, 7), dpi=120)
-    styles_budget = {
-        "1. Ideal (Theoretical Max)": {
-            "color": "black",
-            "linestyle": "--",
-            "marker": "",
-            "label_base": "Perfect assignment",
-        },
-        "2.2 XGBoost (Demos Only)": {
-            "color": "black",
-            "linestyle": "-.",
-            "marker": "^",
-            "label_base": "XGBoost algorithm I",
-        },
-        "2.1 XGBoost (All Features)": {
-            "color": "black",
-            "linestyle": "-",
-            "marker": "o",
-            "label_base": "XGBoost algorithm II",
-        },
-        "3.2 Ordered Logit (Demos Only)": {
-            "color": "gray",
-            "linestyle": "-.",
-            "marker": "^",
-            "label_base": "Logistic regression I",
-        },
-        "3.1 Ordered Logit (All Features)": {
-            "color": "gray",
-            "linestyle": "-",
-            "marker": "o",
-            "label_base": "Logistic regression II",
-        },
-        "4. Random (1000x Mean)": {
-            "color": "gray",
-            "linestyle": ":",
-            "marker": "",
-            "label_base": "Random assignment",
-        },
-    }
-    for group_name, style in styles_budget.items():
-        if group_name in plot_df.index:
-            y_values = plot_df.loc[group_name].values
-            label = f"{style['label_base']} ({avg_rates.loc[group_name]:.2%})"
-            ax.plot(
-                current_budgets,
-                y_values,
-                color=style["color"],
-                linestyle=style["linestyle"],
-                marker=style["marker"],
-                label=label,
-                linewidth=1.8,
-                markersize=8,
+        if use_legacy_wta:
+            (output_dir / "legacy_params_used.txt").write_text(
+                "WTA XGBoost regressors used fixed hyperparameters copied from the original manuscript table.\n"
+                "Pref Alt classifiers were trained through the seeded Optuna workflow.\n",
+                encoding="utf-8",
             )
-    ax.set_xlabel("Mitigation Budget (¥/month)", fontsize=12)
-    ax.set_ylabel("Number of Participating Households", fontsize=12)
-    ax.set_xticks(current_budgets)
-    ax.set_xlim(min(current_budgets) - 200, max(current_budgets) + 200)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.set_ylim(plot_df.min().min() - 5, plot_df.max().max() + 5)
-    ax.legend(loc="center left", bbox_to_anchor=(1, 0.5), frameon=False, fontsize=11)
-    fig.tight_layout()
-    fig.savefig(output_dir / "Figure_6_budget_participation.png", bbox_inches="tight", dpi=300)
-    plt.close(fig)
 
-    print(f"  Done ({_fmt(time.perf_counter() - _t6)})")
+        df_params = build_combined_hyperparameter_table(trained_models, trained_models_reg)
+        df_params.to_csv(output_dir / "Table_C.1_xgboost_hyperparameters.csv", encoding="utf-8-sig")
+        write_latex_table(
+            df_params,
+            output_dir / "Table_C.1_xgboost_hyperparameters.tex",
+            "Table C.1. XGBoost Hyperparameters",
+        )
+
+        print("\n[Step 4/7] Computing prediction metrics...")
+        _t = time.perf_counter()
+        results_ideal = get_ideal_results(test_encoded)
+        final_df_ideal = calculate_metrics(results_ideal, results_ideal).iloc[[0]].copy()
+        final_df_ideal.index = ["Ideal (Upper Bound)"]
+
+        demos_probs = get_group_probabilities(trained_models, test_encoded, "Demos")
+        all_probs = get_group_probabilities(trained_models, test_encoded, "All")
+        results_xgb_demos = get_processed_results(demos_probs, test_encoded, threshold=0)
+        results_xgb_all = get_processed_results(all_probs, test_encoded, threshold=0)
+        final_df_xgb = calculate_metrics(results_xgb_demos, results_xgb_all)
+        print(f"  Done ({_fmt(time.perf_counter() - _t)})")
+
+        print("\n[Step 5/7] Running R logit models...")
+        _t = time.perf_counter()
+        run_r_logit(root, args.rscript, args.output_subdir)
+        logit_demos = pd.read_csv(temp_dir / "logit_probs_demos.csv")
+        logit_all = pd.read_csv(temp_dir / "logit_probs_all.csv")
+        logit_demos.index = test_encoded.index
+        logit_all.index = test_encoded.index
+
+        results_eco_demos = get_processed_results(logit_demos, test_encoded, threshold=0)
+        results_eco_all = get_processed_results(logit_all, test_encoded, threshold=0)
+        final_df_eco = calculate_metrics(results_eco_demos, results_eco_all)
+        final_df_random = run_monte_carlo_random(test_encoded, n_iterations=args.random_iterations)
+        print(f"  Done ({_fmt(time.perf_counter() - _t)})")
+
+        print("\n[Step 6/7] Generating Sections 4.1–4.4 figures and tables...")
+        _t6 = time.perf_counter()
+
+        accuracy_data = {
+            "Logistic regression I": clean_pct(final_df_eco.loc["Demos", "Perfect_Rate"]) * 100,
+            "Logistic regression II": clean_pct(final_df_eco.loc["All", "Perfect_Rate"]) * 100,
+            "XGBoost algorithm I": clean_pct(final_df_xgb.loc["Demos", "Perfect_Rate"]) * 100,
+            "XGBoost algorithm II": clean_pct(final_df_xgb.loc["All", "Perfect_Rate"]) * 100,
+        }
+        accuracy_series = pd.Series(accuracy_data)
+        accuracy_series.to_csv(output_dir / "Table_D.2_prediction_accuracy.csv", header=["Accuracy"])
+
+        fig, ax = plt.subplots(figsize=(10, 6), dpi=120)
+        x_pos = np.arange(len(accuracy_series))
+        bars = ax.bar(x_pos, accuracy_series.values, 0.4, color="black")
+        ax.set_ylim(60, max(accuracy_series.max() + 2, 62))
+        ax.set_ylabel("Prediction Accuracy (%)", fontsize=12)
+        ax.set_xticks(x_pos)
+        ax.set_xticklabels(accuracy_series.index, rotation=15, ha="right", fontsize=11)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        for bar in bars:
+            height = bar.get_height()
+            ax.annotate(
+                f"{height:.2f}%",
+                xy=(bar.get_x() + bar.get_width() / 2, height),
+                xytext=(0, 5),
+                textcoords="offset points",
+                ha="center",
+                va="bottom",
+                fontsize=11,
+            )
+        fig.tight_layout()
+        fig.savefig(output_dir / "Figure_3_prediction_accuracy.png", bbox_inches="tight", dpi=300)
+        plt.close(fig)
+
+        ordered_keys = ["Random", "Logit_All", "Logit_Demos", "XGB_All", "XGB_Demos", "Ideal"]
+        labels = [
+            "Random assignment",
+            "Logistic regression II",
+            "Logistic regression I",
+            "XGBoost algorithm II",
+            "XGBoost algorithm I",
+            "Perfect assignment",
+        ]
+        raw_plot_data = {
+            "Random": {
+                "Rate": clean_pct(final_df_random["Accept_Rate"].iloc[0]) * 100,
+                "Cost": clean_pct(final_df_random["Accept_Cost"].iloc[0]),
+            },
+            "Logit_Demos": {
+                "Rate": clean_pct(final_df_eco.loc["Demos", "Accept_Rate"]) * 100,
+                "Cost": clean_pct(final_df_eco.loc["Demos", "Accept_Cost"]),
+            },
+            "Logit_All": {
+                "Rate": clean_pct(final_df_eco.loc["All", "Accept_Rate"]) * 100,
+                "Cost": clean_pct(final_df_eco.loc["All", "Accept_Cost"]),
+            },
+            "XGB_Demos": {
+                "Rate": clean_pct(final_df_xgb.loc["Demos", "Accept_Rate"]) * 100,
+                "Cost": clean_pct(final_df_xgb.loc["Demos", "Accept_Cost"]),
+            },
+            "XGB_All": {
+                "Rate": clean_pct(final_df_xgb.loc["All", "Accept_Rate"]) * 100,
+                "Cost": clean_pct(final_df_xgb.loc["All", "Accept_Cost"]),
+            },
+            "Ideal": {
+                "Rate": clean_pct(final_df_ideal["Accept_Rate"].iloc[0]) * 100,
+                "Cost": clean_pct(final_df_ideal["Accept_Cost"].iloc[0]),
+            },
+        }
+        df_plot = pd.DataFrame([raw_plot_data[key] for key in ordered_keys], index=labels).apply(pd.to_numeric)
+        df_plot.to_csv(output_dir / "Table_D.3_assignment_outcomes.csv", encoding="utf-8-sig")
+        write_latex_table(
+            df_plot,
+            output_dir / "Table_D.3_assignment_outcomes.tex",
+            "Table D.3. Assignment Outcomes",
+        )
+
+        all_metrics = pd.concat(
+            [
+                format_metrics_table(final_df_random),
+                format_metrics_table(final_df_eco),
+                format_metrics_table(final_df_xgb),
+                format_metrics_table(final_df_ideal),
+            ],
+            axis=0,
+        )
+        fig, ax1 = plt.subplots(figsize=(12, 7), dpi=120)
+        ax2 = ax1.twinx()
+        x_pos = np.arange(len(labels))
+        width = 0.4
+        x_offset = 0.2
+        bars = ax1.bar(
+            x_pos,
+            df_plot["Cost"],
+            width,
+            color="#d9d9d9",
+            edgecolor="black",
+            label="Average Compensation",
+        )
+        ax2.plot(
+            x_pos + x_offset,
+            df_plot["Rate"],
+            color="#7f7f7f",
+            marker="o",
+            linestyle="--",
+            linewidth=2,
+            markersize=8,
+            label="Acceptance Rate",
+            zorder=5,
+        )
+        ax1.set_ylim(df_plot["Cost"].min() - 2, df_plot["Cost"].max() + 2)
+        ax2.set_ylim(df_plot["Rate"].min() - 2, 100)
+        ax1.set_ylabel("Average Compensation (¥)", fontsize=12)
+        ax2.set_ylabel("Acceptance Rate (%)", fontsize=12)
+        ax1.set_xticks(x_pos)
+        ax1.set_xticklabels(labels, rotation=25, ha="right")
+        ax1.spines["top"].set_visible(False)
+        ax1.spines["right"].set_visible(False)
+        ax2.spines["top"].set_visible(False)
+        ax2.spines["left"].set_visible(False)
+
+        for i, bar in enumerate(bars):
+            ax1.annotate(
+                f"{df_plot['Cost'].iloc[i]:.2f}",
+                xy=(bar.get_x() + bar.get_width() / 2, bar.get_height()),
+                xytext=(0, 5),
+                textcoords="offset points",
+                ha="center",
+                va="bottom",
+                fontsize=10,
+            )
+        for i in range(len(df_plot)):
+            y_offset = 15 if i == 4 else 12
+            label_x_offset = x_offset + 0.05 if i == 4 else x_offset
+            ax2.annotate(
+                f"{df_plot['Rate'].iloc[i]:.2f}%",
+                xy=(x_pos[i] + label_x_offset, df_plot["Rate"].iloc[i]),
+                xytext=(0, y_offset),
+                textcoords="offset points",
+                ha="center",
+                fontsize=10,
+                color="#444444",
+                weight="bold",
+            )
+
+        h1, l1 = ax1.get_legend_handles_labels()
+        h2, l2 = ax2.get_legend_handles_labels()
+        ax1.legend(h1 + h2, l1 + l2, loc="lower center", bbox_to_anchor=(0.5, -0.3), ncol=2, frameon=False)
+        fig.tight_layout()
+        fig.savefig(output_dir / "Figure_4_assignment_outcomes.png", bbox_inches="tight", dpi=300)
+        plt.close(fig)
+
+        print("  Running R ordered-logit WTA models...")
+        _t = time.perf_counter()
+        run_r_ologit_wta(root, args.rscript, args.output_subdir)
+        print(f"  Done ({_fmt(time.perf_counter() - _t)})")
+        results_xgb_all = append_final_wta_column(results_xgb_all, test_encoded, trained_models_reg, "All")
+        results_xgb_demos = append_final_wta_column(results_xgb_demos, test_encoded, trained_models_reg, "Demos")
+        results_eco_all = update_eco_results_with_floor(results_eco_all, temp_dir / "wta_preds_all.csv")
+        results_eco_demos = update_eco_results_with_floor(results_eco_demos, temp_dir / "wta_preds_demos.csv")
+
+        current_n_list = [55, 100, 145]
+        m_ideal = get_n_household_metrics(results_ideal, test_encoded, n_list=current_n_list)
+        m_xgb_all = get_n_household_metrics(results_xgb_all, test_encoded, n_list=current_n_list)
+        m_xgb_demos = get_n_household_metrics(results_xgb_demos, test_encoded, n_list=current_n_list)
+        m_eco_all = get_n_household_metrics(results_eco_all, test_encoded, n_list=current_n_list)
+        m_eco_demos = get_n_household_metrics(results_eco_demos, test_encoded, n_list=current_n_list)
+        m_random = get_random_baseline_monte_carlo(
+            test_encoded, n_list=current_n_list, iterations=args.random_iterations
+        )
+
+        m_ideal["Group"] = "1. Ideal (Upper Bound)"
+        m_xgb_all["Group"] = "2.1 XGBoost (All)"
+        m_xgb_demos["Group"] = "2.2 XGBoost (Demos)"
+        m_eco_all["Group"] = "3.1 Ordered Logit (All)"
+        m_eco_demos["Group"] = "3.2 Ordered Logit (Demos)"
+        m_random["Group"] = "4. Random (1000x Mean)"
+
+        quota_metrics = pd.concat([m_ideal, m_xgb_all, m_xgb_demos, m_eco_all, m_eco_demos, m_random])
+        quota_pivot = quota_metrics.pivot(index="Group", columns="Quota (N)")
+        quota_cost = quota_pivot.xs("Accept_Cost", axis=1)
+        quota_cost.to_csv(output_dir / "Table_D.4_quota_accept_cost.csv", encoding="utf-8-sig")
+        write_latex_table(
+            quota_cost,
+            output_dir / "Table_D.4_quota_accept_cost.tex",
+            "Table D.4. Average Compensation by Targeted Number of Households",
+        )
+
+        quota_n = quota_cost.columns.tolist()
+        fig, (ax_top, ax_bottom) = plt.subplots(
+            2,
+            1,
+            sharex=True,
+            figsize=(10, 8),
+            gridspec_kw={"height_ratios": [3, 1]},
+            dpi=120,
+        )
+        fig.subplots_adjust(hspace=0.1)
+        styles_quota = {
+            "4. Random (1000x Mean)": {
+                "color": "gray",
+                "linestyle": ":",
+                "marker": "",
+                "label": "Random assignment",
+            },
+            "3.2 Ordered Logit (Demos)": {
+                "color": "gray",
+                "linestyle": "-",
+                "marker": "o",
+                "label": "Logistic regression I",
+            },
+            "2.2 XGBoost (Demos)": {
+                "color": "black",
+                "linestyle": "-",
+                "marker": "o",
+                "label": "XGBoost algorithm I",
+            },
+            "3.1 Ordered Logit (All)": {
+                "color": "gray",
+                "linestyle": "-.",
+                "marker": "^",
+                "label": "Logistic regression II",
+            },
+            "2.1 XGBoost (All)": {
+                "color": "black",
+                "linestyle": "-.",
+                "marker": "^",
+                "label": "XGBoost algorithm II",
+            },
+            "1. Ideal (Upper Bound)": {
+                "color": "black",
+                "linestyle": "--",
+                "marker": "",
+                "label": "Perfect assignment",
+            },
+        }
+        for group_name, style in styles_quota.items():
+            if group_name in quota_cost.index:
+                y_values = quota_cost.loc[group_name].values
+                ax_top.plot(quota_n, y_values, **style, linewidth=1.5, markersize=7)
+                ax_bottom.plot(quota_n, y_values, **style, linewidth=1.5, markersize=7)
+
+        ax_top.set_ylim(20, m_random.loc[0, "Accept_Cost"] + 2)
+        ax_bottom.set_ylim(0, m_ideal.loc[0, "Accept_Cost"] + 5)
+        ax_top.spines["bottom"].set_visible(False)
+        ax_top.spines["top"].set_visible(False)
+        ax_top.spines["right"].set_visible(False)
+        ax_bottom.spines["top"].set_visible(False)
+        ax_bottom.spines["right"].set_visible(False)
+        ax_top.tick_params(labeltop=False)
+        ax_bottom.xaxis.tick_bottom()
+        d = 0.015
+        kwargs = dict(transform=ax_top.transAxes, color="black", clip_on=False)
+        ax_top.plot((-d, +d), (-d, +d), **kwargs)
+        kwargs.update(transform=ax_bottom.transAxes)
+        ax_bottom.plot((-d, +d), (1 - d, 1 + d), **kwargs)
+        fig.text(
+            0.04,
+            0.5,
+            "Compensation Spending (¥/month/household)",
+            va="center",
+            rotation="vertical",
+            fontsize=12,
+        )
+        ax_bottom.set_xlabel("Targeted Numbers of Households", fontsize=12)
+        ax_bottom.set_xticks(quota_n)
+        ax_top.legend(loc="center left", bbox_to_anchor=(1.05, 0.3), frameon=False, fontsize=11)
+        fig.savefig(output_dir / "Figure_5_quota_compensation.png", bbox_inches="tight", dpi=300)
+        plt.close(fig)
+
+        current_budgets = [1000, 2000, 3000, 4000]
+        bm_ideal = get_budget_metrics(results_ideal, test_encoded, budget_list=current_budgets)
+        bm_xgb_all = get_budget_metrics(results_xgb_all, test_encoded, budget_list=current_budgets)
+        bm_xgb_demos = get_budget_metrics(results_xgb_demos, test_encoded, budget_list=current_budgets)
+        bm_eco_all = get_budget_metrics(results_eco_all, test_encoded, budget_list=current_budgets)
+        bm_eco_demos = get_budget_metrics(results_eco_demos, test_encoded, budget_list=current_budgets)
+        bm_random = get_random_budget_baseline_monte_carlo(
+            test_encoded, current_budgets, iterations=args.random_iterations
+        )
+
+        bm_ideal["Group"] = "1. Ideal (Theoretical Max)"
+        bm_xgb_all["Group"] = "2.1 XGBoost (All Features)"
+        bm_xgb_demos["Group"] = "2.2 XGBoost (Demos Only)"
+        bm_eco_all["Group"] = "3.1 Ordered Logit (All Features)"
+        bm_eco_demos["Group"] = "3.2 Ordered Logit (Demos Only)"
+        bm_random["Group"] = "4. Random (1000x Mean)"
+
+        budget_final = pd.concat([bm_ideal, bm_xgb_all, bm_xgb_demos, bm_eco_all, bm_eco_demos, bm_random])
+        budget_pivot = budget_final.pivot(index="Group", columns="Budget_Limit")
+        budget_pivot[("Accept_Rate", "Average")] = budget_pivot["Accept_Rate"].mean(axis=1)
+
+        budget_table = budget_pivot["Total_Recruited (N)"].copy()
+        budget_table["Average Acceptance Rate"] = budget_pivot[("Accept_Rate", "Average")]
+        budget_table.to_csv(output_dir / "Table_D.5_budget_participation.csv", encoding="utf-8-sig")
+        write_latex_table(
+            budget_table,
+            output_dir / "Table_D.5_budget_participation.tex",
+            "Table D.5. Budget-Constrained Participation and Average Acceptance Rate",
+        )
+
+        plot_df = budget_pivot["Total_Recruited (N)"]
+        avg_rates = budget_pivot[("Accept_Rate", "Average")]
+        fig, ax = plt.subplots(figsize=(12, 7), dpi=120)
+        styles_budget = {
+            "1. Ideal (Theoretical Max)": {
+                "color": "black",
+                "linestyle": "--",
+                "marker": "",
+                "label_base": "Perfect assignment",
+            },
+            "2.2 XGBoost (Demos Only)": {
+                "color": "black",
+                "linestyle": "-.",
+                "marker": "^",
+                "label_base": "XGBoost algorithm I",
+            },
+            "2.1 XGBoost (All Features)": {
+                "color": "black",
+                "linestyle": "-",
+                "marker": "o",
+                "label_base": "XGBoost algorithm II",
+            },
+            "3.2 Ordered Logit (Demos Only)": {
+                "color": "gray",
+                "linestyle": "-.",
+                "marker": "^",
+                "label_base": "Logistic regression I",
+            },
+            "3.1 Ordered Logit (All Features)": {
+                "color": "gray",
+                "linestyle": "-",
+                "marker": "o",
+                "label_base": "Logistic regression II",
+            },
+            "4. Random (1000x Mean)": {
+                "color": "gray",
+                "linestyle": ":",
+                "marker": "",
+                "label_base": "Random assignment",
+            },
+        }
+        for group_name, style in styles_budget.items():
+            if group_name in plot_df.index:
+                y_values = plot_df.loc[group_name].values
+                label = f"{style['label_base']} ({avg_rates.loc[group_name]:.2%})"
+                ax.plot(
+                    current_budgets,
+                    y_values,
+                    color=style["color"],
+                    linestyle=style["linestyle"],
+                    marker=style["marker"],
+                    label=label,
+                    linewidth=1.8,
+                    markersize=8,
+                )
+        ax.set_xlabel("Mitigation Budget (¥/month)", fontsize=12)
+        ax.set_ylabel("Number of Participating Households", fontsize=12)
+        ax.set_xticks(current_budgets)
+        ax.set_xlim(min(current_budgets) - 200, max(current_budgets) + 200)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.set_ylim(plot_df.min().min() - 5, plot_df.max().max() + 5)
+        ax.legend(loc="center left", bbox_to_anchor=(1, 0.5), frameon=False, fontsize=11)
+        fig.tight_layout()
+        fig.savefig(output_dir / "Figure_6_budget_participation.png", bbox_inches="tight", dpi=300)
+        plt.close(fig)
+
+        print(f"  Done ({_fmt(time.perf_counter() - _t6)})")
 
     # ── Weighted Sections 4.1–4.4 analysis ────────────────────────────────────
     if args.weighted:
@@ -809,7 +814,7 @@ def _run(args, root: Path) -> None:
         print(f"Done ({_fmt(time.perf_counter() - _t)})")
         print(f"  Weighted Sections 4.1–4.4 results saved to {w_output_dir}")
 
-    if args.skip_simulation:
+    if args.skip_simulation or _skip_main:
         print(f"\nAll done! Results saved to {output_dir} (total time: {_fmt(time.perf_counter() - t_total)})")
         return
 
