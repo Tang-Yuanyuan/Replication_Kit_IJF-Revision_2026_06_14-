@@ -11,7 +11,7 @@ def _find_rscript() -> Path | None:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Reproduce empirical Sections 4.2 and 4.3.")
+    parser = argparse.ArgumentParser(description="Reproduce empirical Sections 4.1–4.5.")
     parser.add_argument(
         "--root",
         type=Path,
@@ -46,17 +46,17 @@ def parse_args() -> argparse.Namespace:
         "--simulation-iterations",
         type=int,
         default=200,
-        help="Knowledge-growth simulation iterations for Section 4.3.",
+        help="Knowledge-growth simulation iterations for Section 4.5.",
     )
     parser.add_argument(
         "--output-subdir",
-        default="empirical4.2",
-        help="Subdirectory under results/ for Section 4.2 outputs.",
+        default="empirical4.1",
+        help="Subdirectory under results/ for Sections 4.1–4.4 outputs.",
     )
     parser.add_argument(
         "--sim-output-subdir",
         default=None,
-        help="Subdirectory under results/ for Section 4.3 outputs. Defaults to empirical4.3.",
+        help="Subdirectory under results/ for Section 4.5 outputs. Defaults to empirical4.5.",
     )
     parser.add_argument(
         "--use-legacy-wta-params",
@@ -66,17 +66,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--skip-simulation",
         action="store_true",
-        help="Skip the Section 4.3 knowledge-growth simulation.",
+        help="Skip the Section 4.5 knowledge-growth simulation.",
     )
     parser.add_argument(
         "--weighted",
         action="store_true",
-        help="Also run post-stratification weighted analysis (Sections 4.2 and 4.3, Appendix G).",
+        help="Also run post-stratification weighted analysis (Sections 4.1–4.5, Appendix G).",
     )
     parser.add_argument(
         "--weighted-output-subdir",
-        default="empirical4.2_weighted",
-        help="Subdirectory under results/ for weighted Section 4.2 outputs.",
+        default="empirical4.1_weighted",
+        help="Subdirectory under results/ for weighted Sections 4.1–4.4 outputs.",
     )
     parser.add_argument(
         "--rscript",

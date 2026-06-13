@@ -9,7 +9,7 @@ PYTHON_SRC = PROJECT_ROOT / "python"
 if str(PYTHON_SRC) not in sys.path:
     sys.path.insert(0, str(PYTHON_SRC))
 
-from empirical_4_2_4_3.workflow import main
+from empirical_4_1_4_5.workflow import main
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import time
 
 import matplotlib.pyplot as plt
@@ -60,22 +61,48 @@ def _fmt(seconds: float) -> str:
 
 
 def main() -> None:
-    t_total = time.perf_counter()
     args = parse_args()
     root = args.root.resolve()
+
+    if not args.weighted:
+        ans = input("Also run weighted analysis (Appendix G)? [y/N] ").strip().lower()
+        args.weighted = ans in ("y", "yes")
+
+    _also_legacy = False
+    if not args.use_legacy_wta_params:
+        ans = input("Also run legacy WTA comparison? [y/N] ").strip().lower()
+        _also_legacy = ans in ("y", "yes")
+
+    _run(args, root)
+
+    if _also_legacy:
+        legacy_args = copy.copy(args)
+        legacy_args.use_legacy_wta_params = True
+        legacy_args.weighted = False
+        legacy_args.output_subdir = args.output_subdir + "_legacy_wta"
+        legacy_args.sim_output_subdir = (
+            args.sim_output_subdir or "empirical4.5"
+        ) + "_legacy_wta"
+        print(f"\n{'='*60}")
+        print("Re-running analysis with legacy WTA hyperparameters...")
+        _run(legacy_args, root)
+
+
+def _run(args, root: Path) -> None:
+    t_total = time.perf_counter()
     output_dir = root / "results" / args.output_subdir
     output_dir.mkdir(parents=True, exist_ok=True)
     temp_root = root / "data" / "temp"
     temp_root.mkdir(parents=True, exist_ok=True)
     temp_dir = temp_root / args.output_subdir
     temp_dir.mkdir(parents=True, exist_ok=True)
-    sim_output_subdir = args.sim_output_subdir or "empirical4.3"
+    sim_output_subdir = args.sim_output_subdir or "empirical4.5"
     use_legacy_wta = args.use_legacy_wta_params
 
     # Use the post-weights file because it is the most complete intermediate dataset
     # (contains all R-derived variables). The 'weights' column it carries is excluded
     # from every feature set in data.py and is never passed to any model fitter —
-    # Sections 4.2/4.3 are unweighted main-text analyses; weighting is Appendix G only.
+    # Sections 4.1–4.4 are unweighted main-text analyses; weighting is Appendix G only.
     input_file = temp_root / "energy_wta_with_post_weights.csv"
     if not input_file.exists():
         raise FileNotFoundError(
@@ -91,7 +118,7 @@ def main() -> None:
     print(f"  XGBoost training : ~{_fmt(est_clf + est_reg)}")
     print(f"  R models         : ~{_fmt(est_r)}")
     if not args.skip_simulation:
-        print(f"  Section 4.3 sim  : ~{_fmt(est_sim)}")
+        print(f"  Section 4.5 sim  : ~{_fmt(est_sim)}")
     print(f"  Total            : ~{_fmt(est_total)}")
     print("  (Actual time varies by hardware. Use --skip-simulation to stop after Step 6.)\n")
 
@@ -167,11 +194,11 @@ def main() -> None:
         )
 
     df_params = build_combined_hyperparameter_table(trained_models, trained_models_reg)
-    df_params.to_csv(output_dir / "Table_D.2_xgboost_hyperparameters.csv", encoding="utf-8-sig")
+    df_params.to_csv(output_dir / "Table_C.1_xgboost_hyperparameters.csv", encoding="utf-8-sig")
     write_latex_table(
         df_params,
-        output_dir / "Table_D.2_xgboost_hyperparameters.tex",
-        "Table D.2. XGBoost Hyperparameters",
+        output_dir / "Table_C.1_xgboost_hyperparameters.tex",
+        "Table C.1. XGBoost Hyperparameters",
     )
 
     print("\n[Step 4/7] Computing prediction metrics...")
@@ -201,7 +228,7 @@ def main() -> None:
     final_df_random = run_monte_carlo_random(test_encoded, n_iterations=args.random_iterations)
     print(f"  Done ({_fmt(time.perf_counter() - _t)})")
 
-    print("\n[Step 6/7] Generating Section 4.2 figures and tables...")
+    print("\n[Step 6/7] Generating Sections 4.1–4.4 figures and tables...")
     _t6 = time.perf_counter()
 
     accuracy_data = {
@@ -273,11 +300,23 @@ def main() -> None:
         },
     }
     df_plot = pd.DataFrame([raw_plot_data[key] for key in ordered_keys], index=labels).apply(pd.to_numeric)
-    df_plot.to_csv(output_dir / "Table_D.3_assignment_outcomes.csv", encoding="utf-8-sig")
+    df_plot.to_csv(output_dir / "Table_D.2_assignment_outcomes.csv", encoding="utf-8-sig")
     write_latex_table(
         df_plot,
-        output_dir / "Table_D.3_assignment_outcomes.tex",
-        "Table D.3. Assignment Outcomes",
+        output_dir / "Table_D.2_assignment_outcomes.tex",
+        "Table D.2. Assignment Outcomes",
+    )
+
+    _d3 = df_plot.reset_index().rename(columns={
+        "index": "Method",
+        "Rate": "Acceptance Rate (%)",
+        "Cost": "Average Compensation (¥)",
+    })
+    _d3.to_csv(output_dir / "Table_D.3_figure4_data.csv", index=False, encoding="utf-8-sig")
+    write_latex_table(
+        _d3.set_index("Method"),
+        output_dir / "Table_D.3_figure4_data.tex",
+        "Table D.3. Figure 4 Assignment Outcomes by Method",
     )
 
     all_metrics = pd.concat(
@@ -289,7 +328,7 @@ def main() -> None:
         ],
         axis=0,
     )
-    all_metrics.to_csv(output_dir / "empirical_4.2_metrics.csv", encoding="utf-8-sig")
+    all_metrics.to_csv(output_dir / "empirical_4.1_metrics.csv", encoding="utf-8-sig")
 
     fig, ax1 = plt.subplots(figsize=(12, 7), dpi=120)
     ax2 = ax1.twinx()
@@ -449,10 +488,7 @@ def main() -> None:
             ax_top.plot(quota_n, y_values, **style, linewidth=1.5, markersize=7)
             ax_bottom.plot(quota_n, y_values, **style, linewidth=1.5, markersize=7)
 
-    ax_top.set_ylim(
-        min(m_xgb_demos.loc[0, "Accept_Cost"], m_xgb_all.loc[0, "Accept_Cost"]) - 1.5,
-        m_random.loc[0, "Accept_Cost"] + 2,
-    )
+    ax_top.set_ylim(20, m_random.loc[0, "Accept_Cost"] + 2)
     ax_bottom.set_ylim(0, m_ideal.loc[0, "Accept_Cost"] + 5)
     ax_top.spines["bottom"].set_visible(False)
     ax_top.spines["top"].set_visible(False)
@@ -500,7 +536,6 @@ def main() -> None:
     budget_final = pd.concat([bm_ideal, bm_xgb_all, bm_xgb_demos, bm_eco_all, bm_eco_demos, bm_random])
     budget_pivot = budget_final.pivot(index="Group", columns="Budget_Limit")
     budget_pivot[("Accept_Rate", "Average")] = budget_pivot["Accept_Rate"].mean(axis=1)
-    budget_pivot.to_csv(output_dir / "Table_D.5_budget_metrics_full.csv", encoding="utf-8-sig")
 
     budget_table = budget_pivot["Total_Recruited (N)"].copy()
     budget_table["Average Acceptance Rate"] = budget_pivot[("Accept_Rate", "Average")]
@@ -580,11 +615,11 @@ def main() -> None:
 
     print(f"  Done ({_fmt(time.perf_counter() - _t6)})")
 
-    # ── Weighted Section 4.2 analysis ─────────────────────────────────────────
+    # ── Weighted Sections 4.1–4.4 analysis ────────────────────────────────────
     if args.weighted:
         _wN = 4 if args.skip_simulation else 6
         w_subdir = args.weighted_output_subdir
-        w_sim_subdir = w_subdir.replace("4.2", "4.3")
+        w_sim_subdir = w_subdir.replace("4.1", "4.5")
         w_output_dir = root / "results" / w_subdir
         w_output_dir.mkdir(parents=True, exist_ok=True)
         w_temp_dir = temp_root / w_subdir
@@ -646,7 +681,7 @@ def main() -> None:
         w_reco_d = update_eco_results_with_floor(w_reco_d, w_temp_dir / "wta_preds_demos.csv")
         print(f"Done ({_fmt(time.perf_counter() - _t)})")
 
-        print(f"[Weighted 4/{_wN}] Generating weighted Section 4.2 figures (G.3–G.6)...", end="  ", flush=True)
+        print(f"[Weighted 4/{_wN}] Generating weighted Sections 4.1–4.4 figures (G.3–G.6)...", end="  ", flush=True)
         _t = time.perf_counter()
 
         # G.3 — prediction accuracy
@@ -788,7 +823,7 @@ def main() -> None:
         plt.close(fig)
 
         print(f"Done ({_fmt(time.perf_counter() - _t)})")
-        print(f"  Weighted Section 4.2 results saved to {w_output_dir}")
+        print(f"  Weighted Sections 4.1–4.4 results saved to {w_output_dir}")
 
     if args.skip_simulation:
         print(f"\nAll done! Results saved to {output_dir} (total time: {_fmt(time.perf_counter() - t_total)})")
@@ -809,7 +844,7 @@ def main() -> None:
     test_base = test_raw.copy().reset_index(drop=True)
 
     _total_iters = args.simulation_iterations
-    print(f"\n[Step 7/7] Section 4.3 knowledge-growth simulation ({_total_iters} iterations)...")
+    print(f"\n[Step 7/7] Section 4.5 knowledge-growth simulation ({_total_iters} iterations)...")
     _t7 = time.perf_counter()
     for i in range(_total_iters):
         _elapsed = time.perf_counter() - _t7
@@ -946,7 +981,7 @@ def main() -> None:
     fig.savefig(sim_dir / "Figure_7_knowledge_growth.png", bbox_inches="tight", dpi=300)
     plt.close(fig)
 
-    # ── Weighted Section 4.3 simulation ──────────────────────────────────────
+    # ── Weighted Section 4.5 simulation ──────────────────────────────────────
     if args.weighted:
         w_sim_dir = root / "results" / w_sim_subdir
         w_sim_dir.mkdir(parents=True, exist_ok=True)
@@ -957,7 +992,7 @@ def main() -> None:
             "xgb_demos_sm": {}, "eco_all_sm": {}, "eco_demos_sm": {},
         }
         _wt_total = args.simulation_iterations
-        print(f"\n[Weighted 5/6] Weighted Section 4.3 simulation ({_wt_total} iterations)...")
+        print(f"\n[Weighted 5/6] Weighted Section 4.5 simulation ({_wt_total} iterations)...")
         _tw7 = time.perf_counter()
         for i in range(_wt_total):
             _we = time.perf_counter() - _tw7
@@ -994,7 +1029,7 @@ def main() -> None:
         w_sim_summary = summarize_simulation_results(w_simulate_results)
         w_sim_summary.to_csv(w_sim_dir / "Figure_G.7_knowledge_growth_summary.csv", encoding="utf-8-sig")
 
-        print(f"[Weighted 6/6] Generating weighted Section 4.3 figure (G.7)...", end="  ", flush=True)
+        print(f"[Weighted 6/6] Generating weighted Section 4.5 figure (G.7)...", end="  ", flush=True)
         _t = time.perf_counter()
         w_sim_order = [
             ("random_sm", "Random assignment"), ("eco_all_sm", "Logistic regression II"),
@@ -1035,6 +1070,6 @@ def main() -> None:
         fig.savefig(w_sim_dir / "Figure_G.7_knowledge_growth.png", bbox_inches="tight", dpi=300)
         plt.close(fig)
         print(f"Done ({_fmt(time.perf_counter() - _t)})")
-        print(f"  Weighted Section 4.3 results saved to {w_sim_dir}")
+        print(f"  Weighted Section 4.5 results saved to {w_sim_dir}")
 
-    print(f"\nAll done! Section 4.2: {output_dir}  /  Section 4.3: {sim_dir}  (total time: {_fmt(time.perf_counter() - t_total)})")
+    print(f"\nAll done! Sections 4.1–4.4: {output_dir}  /  Section 4.5: {sim_dir}  (total time: {_fmt(time.perf_counter() - t_total)})")
