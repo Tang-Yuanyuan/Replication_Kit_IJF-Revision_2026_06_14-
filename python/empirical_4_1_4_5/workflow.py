@@ -799,6 +799,99 @@ def _run(args, root: Path) -> None:
         print(f"Done ({_fmt(time.perf_counter() - _t)})")
         print(f"  Weighted Sections 4.1–4.4 results saved to {w_output_dir}")
 
+    test_base = test_raw.copy().reset_index(drop=True)
+
+    # ── Weighted Section 4.5 simulation ──────────────────────────────────────
+    if args.weighted:
+        w_sim_dir = root / "results" / w_sim_subdir
+        w_sim_dir.mkdir(parents=True, exist_ok=True)
+        w_sim_temp_dir = temp_root / w_sim_subdir
+        w_sim_temp_dir.mkdir(parents=True, exist_ok=True)
+        w_simulate_results = {
+            "ideal_sm": {}, "random_sm": {}, "xgb_all_sm": {},
+            "xgb_demos_sm": {}, "eco_all_sm": {}, "eco_demos_sm": {},
+        }
+        _wt_total = args.simulation_iterations
+        print(f"\n[Weighted 5/6] Weighted Section 4.5 simulation ({_wt_total} iterations)...")
+        _tw7 = time.perf_counter()
+        for i in range(_wt_total):
+            _we = time.perf_counter() - _tw7
+            _weta = "--" if i == 0 else _fmt(_we / i * (_wt_total - i))
+            print(f"  Iteration {i + 1:4d}/{_wt_total}  (ETA: {_weta})     ", end="\r", flush=True)
+            np.random.seed(RANDOM_SEED + i)
+            wsim_raw = simulate_policy_knowledge_upgrade(test_base.copy())
+            wsim_raw.to_csv(w_sim_temp_dir / "test_data_simulated.csv", index=False, encoding="utf-8-sig")
+            run_r_simulated_predictions_weighted(root, args.rscript, args.output_subdir, w_sim_subdir)
+            wl_demos = pd.read_csv(w_sim_temp_dir / "logit_probs_demos_simulated.csv")
+            wl_all   = pd.read_csv(w_sim_temp_dir / "logit_probs_all_simulated.csv")
+            wl_demos.index = wsim_raw.index
+            wl_all.index   = wsim_raw.index
+            weco_d = get_processed_results(wl_demos, wsim_raw, threshold=0)
+            weco_a = get_processed_results(wl_all,   wsim_raw, threshold=0)
+            wfdf_eco = calculate_metrics(weco_d, weco_a)
+            wsim_enc = encode_like_reference(wsim_raw, test_encoded.columns)
+            wfdf_ideal  = calculate_metrics(get_ideal_results(wsim_enc), get_ideal_results(wsim_enc)).iloc[[0]].copy()
+            wfdf_random = run_monte_carlo_random(wsim_enc, n_iterations=args.random_iterations)
+            wdp = get_group_probabilities(w_trained_models, wsim_enc, "Demos")
+            wap = get_group_probabilities(w_trained_models, wsim_enc, "All")
+            wfdf_xgb = calculate_metrics(
+                get_processed_results(wdp, wsim_enc, threshold=0),
+                get_processed_results(wap, wsim_enc, threshold=0),
+            )
+            append_metrics(w_simulate_results["ideal_sm"],     wfdf_ideal,  0)
+            append_metrics(w_simulate_results["random_sm"],    wfdf_random, 0)
+            append_metrics(w_simulate_results["xgb_demos_sm"], wfdf_xgb,   0)
+            append_metrics(w_simulate_results["xgb_all_sm"],   wfdf_xgb,   1)
+            append_metrics(w_simulate_results["eco_demos_sm"],  wfdf_eco,   0)
+            append_metrics(w_simulate_results["eco_all_sm"],    wfdf_eco,   1)
+        print()
+        print(f"  Weighted simulation done ({_fmt(time.perf_counter() - _tw7)})")
+        w_sim_summary = summarize_simulation_results(w_simulate_results)
+        w_sim_summary.to_csv(w_sim_dir / "Figure_G.7_knowledge_growth_summary.csv", encoding="utf-8-sig")
+
+        print(f"[Weighted 6/6] Generating weighted Section 4.5 figure (G.7)...", end="  ", flush=True)
+        _t = time.perf_counter()
+        w_sim_order = [
+            ("random_sm", "Random assignment"), ("eco_all_sm", "Logistic regression II"),
+            ("eco_demos_sm", "Logistic regression I"), ("xgb_all_sm", "XGBoost algorithm II"),
+            ("xgb_demos_sm", "XGBoost algorithm I"), ("ideal_sm", "Perfect assignment"),
+        ]
+        w_sim_labels = [lb for _, lb in w_sim_order]
+        w_bl_cost = w_df_plot.loc[w_sim_labels, "Cost"].values
+        w_bl_rate = w_df_plot.loc[w_sim_labels, "Rate"].values
+        w_cf_cost     = np.array([w_sim_summary.loc[k, "Cost_Mean"] for k, _ in w_sim_order])
+        w_cf_cost_err = np.array([2 * w_sim_summary.loc[k, "Cost_SD"] for k, _ in w_sim_order])
+        w_cf_rate     = np.array([w_sim_summary.loc[k, "Rate_Mean"] for k, _ in w_sim_order])
+        w_cf_rate_low = np.array([w_sim_summary.loc[k, "Rate_Low"]  for k, _ in w_sim_order])
+        w_cf_rate_hi  = np.array([w_sim_summary.loc[k, "Rate_High"] for k, _ in w_sim_order])
+        fig, ax1 = plt.subplots(figsize=(14, 7), dpi=120)
+        ax2 = ax1.twinx()
+        xp = np.arange(len(w_sim_labels))
+        wd = 0.32
+        ax1.bar(xp - wd / 2, w_bl_cost, wd, color="#d9d9d9", edgecolor="black", label="Benchmark Average Compensation")
+        ax1.bar(xp + wd / 2, w_cf_cost, wd, color="#666666", edgecolor="black",
+                yerr=w_cf_cost_err, capsize=4, label="Counterfactual Average Compensation")
+        ax2.plot(xp, w_bl_rate,  color="gray",  linestyle="--", marker="o", label="Benchmark Acceptance Rate")
+        ax2.fill_between(xp, w_cf_rate_low, w_cf_rate_hi, color="gray", alpha=0.2, label="95% Confidence Interval")
+        ax2.plot(xp, w_cf_rate, color="black", linestyle="-",  marker="s", label="Counterfactual Acceptance Rate")
+        for idx, val in enumerate(w_bl_cost):
+            ax1.annotate(f"{val:.2f}", xy=(idx - wd / 2, val), xytext=(0, 5), textcoords="offset points", ha="center", fontsize=9)
+        for idx, val in enumerate(w_cf_cost):
+            ax1.annotate(f"{val:.2f}", xy=(idx + wd / 2, val), xytext=(0, 5), textcoords="offset points", ha="center", fontsize=9)
+        for idx, val in enumerate(w_cf_rate):
+            ax2.annotate(f"{val:.2f}%", xy=(idx, val), xytext=(0, 8), textcoords="offset points", ha="center", fontsize=9, weight="bold")
+        ax1.set_ylabel("Average Compensation (¥)", fontsize=12)
+        ax2.set_ylabel("Acceptance Rate (%)", fontsize=12)
+        ax1.set_xticks(xp); ax1.set_xticklabels(w_sim_labels, rotation=15, ha="right")
+        ax1.spines["top"].set_visible(False); ax2.spines["top"].set_visible(False)
+        h1, l1 = ax1.get_legend_handles_labels(); h2, l2 = ax2.get_legend_handles_labels()
+        ax1.legend(h1 + h2, l1 + l2, loc="lower center", bbox_to_anchor=(0.5, -0.28), ncol=3, frameon=False)
+        fig.tight_layout()
+        fig.savefig(w_sim_dir / "Figure_G.7_knowledge_growth.png", bbox_inches="tight", dpi=300)
+        plt.close(fig)
+        print(f"Done ({_fmt(time.perf_counter() - _t)})")
+        print(f"  Weighted Section 4.5 results saved to {w_sim_dir}")
+
     if args.skip_simulation or _skip_main:
         print(f"\nAll done! Results saved to {output_dir} (total time: {_fmt(time.perf_counter() - t_total)})")
         return
@@ -815,7 +908,6 @@ def _run(args, root: Path) -> None:
         "eco_all_sm": {},
         "eco_demos_sm": {},
     }
-    test_base = test_raw.copy().reset_index(drop=True)
 
     _total_iters = args.simulation_iterations
     print(f"\n[Step 7/7] Section 4.5 knowledge-growth simulation ({_total_iters} iterations)...")
@@ -953,96 +1045,5 @@ def _run(args, root: Path) -> None:
     fig.tight_layout()
     fig.savefig(sim_dir / "Figure_7_knowledge_growth.png", bbox_inches="tight", dpi=300)
     plt.close(fig)
-
-    # ── Weighted Section 4.5 simulation ──────────────────────────────────────
-    if args.weighted:
-        w_sim_dir = root / "results" / w_sim_subdir
-        w_sim_dir.mkdir(parents=True, exist_ok=True)
-        w_sim_temp_dir = temp_root / w_sim_subdir
-        w_sim_temp_dir.mkdir(parents=True, exist_ok=True)
-        w_simulate_results = {
-            "ideal_sm": {}, "random_sm": {}, "xgb_all_sm": {},
-            "xgb_demos_sm": {}, "eco_all_sm": {}, "eco_demos_sm": {},
-        }
-        _wt_total = args.simulation_iterations
-        print(f"\n[Weighted 5/6] Weighted Section 4.5 simulation ({_wt_total} iterations)...")
-        _tw7 = time.perf_counter()
-        for i in range(_wt_total):
-            _we = time.perf_counter() - _tw7
-            _weta = "--" if i == 0 else _fmt(_we / i * (_wt_total - i))
-            print(f"  Iteration {i + 1:4d}/{_wt_total}  (ETA: {_weta})     ", end="\r", flush=True)
-            np.random.seed(RANDOM_SEED + i)
-            wsim_raw = simulate_policy_knowledge_upgrade(test_base.copy())
-            wsim_raw.to_csv(w_sim_temp_dir / "test_data_simulated.csv", index=False, encoding="utf-8-sig")
-            run_r_simulated_predictions_weighted(root, args.rscript, args.output_subdir, w_sim_subdir)
-            wl_demos = pd.read_csv(w_sim_temp_dir / "logit_probs_demos_simulated.csv")
-            wl_all   = pd.read_csv(w_sim_temp_dir / "logit_probs_all_simulated.csv")
-            wl_demos.index = wsim_raw.index
-            wl_all.index   = wsim_raw.index
-            weco_d = get_processed_results(wl_demos, wsim_raw, threshold=0)
-            weco_a = get_processed_results(wl_all,   wsim_raw, threshold=0)
-            wfdf_eco = calculate_metrics(weco_d, weco_a)
-            wsim_enc = encode_like_reference(wsim_raw, test_encoded.columns)
-            wfdf_ideal  = calculate_metrics(get_ideal_results(wsim_enc), get_ideal_results(wsim_enc)).iloc[[0]].copy()
-            wfdf_random = run_monte_carlo_random(wsim_enc, n_iterations=args.random_iterations)
-            wdp = get_group_probabilities(w_trained_models, wsim_enc, "Demos")
-            wap = get_group_probabilities(w_trained_models, wsim_enc, "All")
-            wfdf_xgb = calculate_metrics(
-                get_processed_results(wdp, wsim_enc, threshold=0),
-                get_processed_results(wap, wsim_enc, threshold=0),
-            )
-            append_metrics(w_simulate_results["ideal_sm"],     wfdf_ideal,  0)
-            append_metrics(w_simulate_results["random_sm"],    wfdf_random, 0)
-            append_metrics(w_simulate_results["xgb_demos_sm"], wfdf_xgb,   0)
-            append_metrics(w_simulate_results["xgb_all_sm"],   wfdf_xgb,   1)
-            append_metrics(w_simulate_results["eco_demos_sm"],  wfdf_eco,   0)
-            append_metrics(w_simulate_results["eco_all_sm"],    wfdf_eco,   1)
-        print()
-        print(f"  Weighted simulation done ({_fmt(time.perf_counter() - _tw7)})")
-        w_sim_summary = summarize_simulation_results(w_simulate_results)
-        w_sim_summary.to_csv(w_sim_dir / "Figure_G.7_knowledge_growth_summary.csv", encoding="utf-8-sig")
-
-        print(f"[Weighted 6/6] Generating weighted Section 4.5 figure (G.7)...", end="  ", flush=True)
-        _t = time.perf_counter()
-        w_sim_order = [
-            ("random_sm", "Random assignment"), ("eco_all_sm", "Logistic regression II"),
-            ("eco_demos_sm", "Logistic regression I"), ("xgb_all_sm", "XGBoost algorithm II"),
-            ("xgb_demos_sm", "XGBoost algorithm I"), ("ideal_sm", "Perfect assignment"),
-        ]
-        w_sim_labels = [lb for _, lb in w_sim_order]
-        w_bl_cost = w_df_plot.loc[w_sim_labels, "Cost"].values
-        w_bl_rate = w_df_plot.loc[w_sim_labels, "Rate"].values
-        w_cf_cost     = np.array([w_sim_summary.loc[k, "Cost_Mean"] for k, _ in w_sim_order])
-        w_cf_cost_err = np.array([2 * w_sim_summary.loc[k, "Cost_SD"] for k, _ in w_sim_order])
-        w_cf_rate     = np.array([w_sim_summary.loc[k, "Rate_Mean"] for k, _ in w_sim_order])
-        w_cf_rate_low = np.array([w_sim_summary.loc[k, "Rate_Low"]  for k, _ in w_sim_order])
-        w_cf_rate_hi  = np.array([w_sim_summary.loc[k, "Rate_High"] for k, _ in w_sim_order])
-        fig, ax1 = plt.subplots(figsize=(14, 7), dpi=120)
-        ax2 = ax1.twinx()
-        xp = np.arange(len(w_sim_labels))
-        wd = 0.32
-        ax1.bar(xp - wd / 2, w_bl_cost, wd, color="#d9d9d9", edgecolor="black", label="Benchmark Average Compensation")
-        ax1.bar(xp + wd / 2, w_cf_cost, wd, color="#666666", edgecolor="black",
-                yerr=w_cf_cost_err, capsize=4, label="Counterfactual Average Compensation")
-        ax2.plot(xp, w_bl_rate,  color="gray",  linestyle="--", marker="o", label="Benchmark Acceptance Rate")
-        ax2.fill_between(xp, w_cf_rate_low, w_cf_rate_hi, color="gray", alpha=0.2, label="95% Confidence Interval")
-        ax2.plot(xp, w_cf_rate, color="black", linestyle="-",  marker="s", label="Counterfactual Acceptance Rate")
-        for idx, val in enumerate(w_bl_cost):
-            ax1.annotate(f"{val:.2f}", xy=(idx - wd / 2, val), xytext=(0, 5), textcoords="offset points", ha="center", fontsize=9)
-        for idx, val in enumerate(w_cf_cost):
-            ax1.annotate(f"{val:.2f}", xy=(idx + wd / 2, val), xytext=(0, 5), textcoords="offset points", ha="center", fontsize=9)
-        for idx, val in enumerate(w_cf_rate):
-            ax2.annotate(f"{val:.2f}%", xy=(idx, val), xytext=(0, 8), textcoords="offset points", ha="center", fontsize=9, weight="bold")
-        ax1.set_ylabel("Average Compensation (¥)", fontsize=12)
-        ax2.set_ylabel("Acceptance Rate (%)", fontsize=12)
-        ax1.set_xticks(xp); ax1.set_xticklabels(w_sim_labels, rotation=15, ha="right")
-        ax1.spines["top"].set_visible(False); ax2.spines["top"].set_visible(False)
-        h1, l1 = ax1.get_legend_handles_labels(); h2, l2 = ax2.get_legend_handles_labels()
-        ax1.legend(h1 + h2, l1 + l2, loc="lower center", bbox_to_anchor=(0.5, -0.28), ncol=3, frameon=False)
-        fig.tight_layout()
-        fig.savefig(w_sim_dir / "Figure_G.7_knowledge_growth.png", bbox_inches="tight", dpi=300)
-        plt.close(fig)
-        print(f"Done ({_fmt(time.perf_counter() - _t)})")
-        print(f"  Weighted Section 4.5 results saved to {w_sim_dir}")
 
     print(f"\nAll done! Sections 4.1–4.4: {output_dir}  /  Section 4.5: {sim_dir}  (total time: {_fmt(time.perf_counter() - t_total)})")
