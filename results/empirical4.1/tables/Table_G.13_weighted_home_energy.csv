@@ -10,3 +10,6 @@
 "know_about_carbon_policyheard but do not know","","","","0.718** (0.321)"
 "know_about_carbon_policyheard and know","","","","1.004** (0.462)"
 "know_about_carbon_policyfamiliar","","","","0.599 (1.380)"
+"AIC","1684.56","1684.33","1680.77","1675.5"
+"BIC","1838.44","1842.37","1838.82","1833.54"
+"N","473","473","473","473"
