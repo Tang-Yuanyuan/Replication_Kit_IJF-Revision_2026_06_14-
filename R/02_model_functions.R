@@ -49,6 +49,23 @@ ic_lines <- function(models) {
   )
 }
 
+# svyolr inherits from polr but doesn't register a logLik method, so AIC()/BIC()
+# dispatch fails. Fall back to computing from the stored $logLik field directly.
+polr_aic <- function(m) {
+  tryCatch(AIC(m), error = function(e) {
+    k <- length(coef(m)) + length(m$zeta)
+    -2 * m$logLik + 2 * k
+  })
+}
+
+polr_bic <- function(m) {
+  tryCatch(BIC(m), error = function(e) {
+    k <- length(coef(m)) + length(m$zeta)
+    n <- nrow(m$fitted.values)
+    -2 * m$logLik + log(n) * k
+  })
+}
+
 export_stargazer_models <- function(models, file, keep = NULL, omit = NULL,
                                     type = "latex", title = NULL) {
   table <- build_model_table(models, keep = keep, omit = omit)
@@ -294,9 +311,9 @@ export_compact_results <- function(model_list, group_name, keep_pattern, file) {
     final_tab[[labels[[i]]]] <- values
   }
 
-  aic_row <- as.data.frame(as.list(c("AIC", round(vapply(model_list, AIC, numeric(1)), 2))),
+  aic_row <- as.data.frame(as.list(c("AIC", round(vapply(model_list, polr_aic, numeric(1)), 2))),
                            stringsAsFactors = FALSE)
-  bic_row <- as.data.frame(as.list(c("BIC", round(vapply(model_list, BIC, numeric(1)), 2))),
+  bic_row <- as.data.frame(as.list(c("BIC", round(vapply(model_list, polr_bic, numeric(1)), 2))),
                            stringsAsFactors = FALSE)
   n_row <- as.data.frame(as.list(c("N", vapply(model_list, function(m) nrow(m$fitted.values), integer(1)))),
                          stringsAsFactors = FALSE)
