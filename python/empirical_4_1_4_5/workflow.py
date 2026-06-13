@@ -410,8 +410,6 @@ def _run(args, root: Path) -> None:
 
     quota_metrics = pd.concat([m_ideal, m_xgb_all, m_xgb_demos, m_eco_all, m_eco_demos, m_random])
     quota_pivot = quota_metrics.pivot(index="Group", columns="Quota (N)")
-    quota_pivot.to_csv(output_dir / "Table_D.4_quota_metrics_full.csv", encoding="utf-8-sig")
-
     quota_cost = quota_pivot.xs("Accept_Cost", axis=1)
     quota_cost.to_csv(output_dir / "Table_D.4_quota_accept_cost.csv", encoding="utf-8-sig")
     write_latex_table(
