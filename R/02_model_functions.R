@@ -24,7 +24,7 @@ fit_polr_set <- function(data, outcome, controls, exposure) {
     # in the caller's environment. Store evaluated formula and data directly so
     # brant doesn't try to look up local variable names that no longer exist.
     m$call$formula <- f
-    m$call$data    <- data
+    m$call$data <- data
     models[[i]] <- m
   }
 
@@ -54,7 +54,7 @@ ic_lines <- function(models) {
 polr_aic <- function(m) {
   tryCatch(AIC(m), error = function(e) {
     k <- length(coef(m)) + length(m$zeta)
-    -2 * m$logLik + 2 * k
+    m$deviance + 2 * k
   })
 }
 
@@ -62,7 +62,7 @@ polr_bic <- function(m) {
   tryCatch(BIC(m), error = function(e) {
     k <- length(coef(m)) + length(m$zeta)
     n <- nrow(m$fitted.values)
-    -2 * m$logLik + log(n) * k
+    m$deviance + log(n) * k
   })
 }
 
@@ -110,11 +110,14 @@ build_model_table <- function(models, keep = NULL, omit = NULL) {
   names(table) <- c("Variable", labels)
 
   aic_row <- as.data.frame(as.list(c("AIC", round(vapply(models, AIC, numeric(1)), 2))),
-                           stringsAsFactors = FALSE)
+    stringsAsFactors = FALSE
+  )
   bic_row <- as.data.frame(as.list(c("BIC", round(vapply(models, BIC, numeric(1)), 2))),
-                           stringsAsFactors = FALSE)
+    stringsAsFactors = FALSE
+  )
   n_row <- as.data.frame(as.list(c("N", vapply(models, function(m) nrow(m$fitted.values), integer(1)))),
-                         stringsAsFactors = FALSE)
+    stringsAsFactors = FALSE
+  )
   names(aic_row) <- names(table)
   names(bic_row) <- names(table)
   names(n_row) <- names(table)
@@ -159,8 +162,10 @@ export_main_model_tables <- function(models, prepared) {
   export_stargazer_models(
     models$car,
     file.path(paths$tables, "Table_3_main_transport.tex"),
-    keep = c("^location", "^heard_about_global_warming", "^know_about_low_carbon",
-             "^know_about_carbon_neutrality", "^know_about_carbon_policy"),
+    keep = c(
+      "^location", "^heard_about_global_warming", "^know_about_low_carbon",
+      "^know_about_carbon_neutrality", "^know_about_carbon_policy"
+    ),
     omit = omit_controls,
     title = "Table 3. Transportation WTA"
   )
@@ -168,8 +173,10 @@ export_main_model_tables <- function(models, prepared) {
   export_stargazer_models(
     models$elec,
     file.path(paths$tables, "Table_4_main_home_energy.tex"),
-    keep = c("female", "is_bachelor", "^know_about_low_carbon",
-             "^know_about_carbon_neutrality", "^know_about_carbon_policy"),
+    keep = c(
+      "female", "is_bachelor", "^know_about_low_carbon",
+      "^know_about_carbon_neutrality", "^know_about_carbon_policy"
+    ),
     omit = omit_controls,
     title = "Table 4. Home Energy WTA"
   )
@@ -177,8 +184,10 @@ export_main_model_tables <- function(models, prepared) {
   export_stargazer_models(
     models$green,
     file.path(paths$tables, "Table_5_main_green_electricity.tex"),
-    keep = c("^location", "income_level", "^know_about_carbon_neutrality",
-             "^know_about_carbon_policy"),
+    keep = c(
+      "^location", "income_level", "^know_about_carbon_neutrality",
+      "^know_about_carbon_policy"
+    ),
     omit = omit_controls,
     title = "Table 5. Green Electricity WTA"
   )
@@ -191,7 +200,7 @@ capture_to_file <- function(expr, file) {
 }
 
 run_brant_e6 <- function(models, prepared) {
-  df      <- prepared$data
+  df <- prepared$data
   subsets <- analysis_subsets(df)
 
   # car2, green3, green4: drop province/weekday/weather before running brant
@@ -206,16 +215,22 @@ run_brant_e6 <- function(models, prepared) {
     f <- make_model_formula(outcome, controls, exposure, knowledge)
     m <- MASS::polr(f, data = data, Hess = TRUE)
     m$call$formula <- f
-    m$call$data    <- data
+    m$call$data <- data
     m
   }
 
-  car2_nfe   <- fit_no_fe("wta_car",   no_fe_controls, "caruse",
-                          "know_about_low_carbon",        subsets$car)
-  green3_nfe <- fit_no_fe("wta_green", no_fe_controls, "mainuseelec",
-                          "know_about_carbon_neutrality", subsets$green)
-  green4_nfe <- fit_no_fe("wta_green", no_fe_controls, "mainuseelec",
-                          "know_about_carbon_policy",     subsets$green)
+  car2_nfe <- fit_no_fe(
+    "wta_car", no_fe_controls, "caruse",
+    "know_about_low_carbon", subsets$car
+  )
+  green3_nfe <- fit_no_fe(
+    "wta_green", no_fe_controls, "mainuseelec",
+    "know_about_carbon_neutrality", subsets$green
+  )
+  green4_nfe <- fit_no_fe(
+    "wta_green", no_fe_controls, "mainuseelec",
+    "know_about_carbon_policy", subsets$green
+  )
 
   omnibus <- function(model) {
     res <- NULL
@@ -312,11 +327,14 @@ export_compact_results <- function(model_list, group_name, keep_pattern, file) {
   }
 
   aic_row <- as.data.frame(as.list(c("AIC", round(vapply(model_list, polr_aic, numeric(1)), 2))),
-                           stringsAsFactors = FALSE)
+    stringsAsFactors = FALSE
+  )
   bic_row <- as.data.frame(as.list(c("BIC", round(vapply(model_list, polr_bic, numeric(1)), 2))),
-                           stringsAsFactors = FALSE)
+    stringsAsFactors = FALSE
+  )
   n_row <- as.data.frame(as.list(c("N", vapply(model_list, function(m) nrow(m$fitted.values), integer(1)))),
-                         stringsAsFactors = FALSE)
+    stringsAsFactors = FALSE
+  )
   names(aic_row) <- names(final_tab)
   names(bic_row) <- names(final_tab)
   names(n_row) <- names(final_tab)
