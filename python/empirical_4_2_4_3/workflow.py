@@ -49,7 +49,7 @@ from .tables import (
 
 
 def _fmt(seconds: float) -> str:
-    return f"{seconds:.1f} 秒" if seconds < 60 else f"{seconds / 60:.1f} 分钟"
+    return f"{seconds:.1f}s" if seconds < 60 else f"{seconds / 60:.1f} min"
 
 
 def main() -> None:
@@ -75,13 +75,26 @@ def main() -> None:
             f"{input_file} not found. Run run_all.R first to generate weighted data."
         )
 
-    print("\n[步骤 1/7] 加载并编码数据...")
+    est_clf = 6 * args.n_trials * 0.11
+    est_reg = 6 * (args.reg_n_trials if not args.use_legacy_wta else 5) * 0.22
+    est_r   = 60.0
+    est_sim = 0.0 if args.skip_simulation else args.simulation_iterations * 23.0
+    est_total = est_clf + est_reg + est_r + est_sim
+    print("Estimated runtime (reference hardware):")
+    print(f"  XGBoost training : ~{_fmt(est_clf + est_reg)}")
+    print(f"  R models         : ~{_fmt(est_r)}")
+    if not args.skip_simulation:
+        print(f"  Section 4.3 sim  : ~{_fmt(est_sim)}")
+    print(f"  Total            : ~{_fmt(est_total)}")
+    print("  (Actual time varies by hardware. Use --skip-simulation to stop after Step 6.)\n")
+
+    print("\n[Step 1/7] Loading and encoding data...")
     _t = time.perf_counter()
     df = pd.read_csv(input_file)
     train_raw, test_raw = prepare_train_test(df, temp_dir)
     train_encoded, test_encoded = encode_for_xgboost(train_raw, test_raw)
     feature_sets = get_feature_sets(train_encoded)
-    print(f"  完成，用时 {_fmt(time.perf_counter() - _t)}")
+    print(f"  Done ({_fmt(time.perf_counter() - _t)})")
 
     train_car = get_subset_data(train_encoded, mode="car")
     train_elec = get_subset_data(train_encoded, mode="elec")
@@ -96,11 +109,10 @@ def main() -> None:
         ("Green_All", train_green, "y_green", feature_sets["demos_all_green"], "All"),
     ]
 
-    print(f"\n[步骤 2/7] 训练 XGBoost 分类器（{len(train_tasks)} 个模型，每个 {args.n_trials} 个 trial）...")
+    print(f"\n[Step 2/7] Training PrefAlt XGBoost models ({len(train_tasks)} models, {args.n_trials} trials each)...")
     _t = time.perf_counter()
     trained_models: dict[str, xgb.XGBClassifier] = {}
     for _i, (name, train_df, y_col, features, group_type) in enumerate(train_tasks, 1):
-        print(f"  [{_i}/{len(train_tasks)}] {name}")
         trained_models[name] = train_xgb_model_bayesian(
             train_df[features],
             train_df[y_col],
@@ -108,7 +120,7 @@ def main() -> None:
             n_trials=args.n_trials,
             cv=args.cv,
         )
-    print(f"  分类器训练完成，用时 {_fmt(time.perf_counter() - _t)}")
+    print(f"  Done ({_fmt(time.perf_counter() - _t)})")
 
     reg_tasks = [
         ("Car_Demos_Reg", train_car, "wta_car", feature_sets["demos_car"], "Demos"),
@@ -119,12 +131,11 @@ def main() -> None:
         ("Green_All_Reg", train_green, "wta_green", feature_sets["demos_all_green"], "All"),
     ]
 
-    n_reg_trials = "固定参数" if use_legacy_wta else f"每个 {args.reg_n_trials} 个 trial"
-    print(f"\n[步骤 3/7] 训练 XGBoost 回归器（{len(reg_tasks)} 个模型，{n_reg_trials}）...")
+    n_reg_trials = "fixed params" if use_legacy_wta else f"{args.reg_n_trials} trials each"
+    print(f"\n[Step 3/7] Training WTA XGBoost models ({len(reg_tasks)} models, {n_reg_trials})...")
     _t = time.perf_counter()
     trained_models_reg: dict[str, xgb.XGBRegressor] = {}
     for _i, (name, train_df, y_col, features, group_type) in enumerate(reg_tasks, 1):
-        print(f"  [{_i}/{len(reg_tasks)}] {name}")
         if use_legacy_wta:
             model = train_xgb_regressor_fixed(
                 train_df[features],
@@ -140,10 +151,7 @@ def main() -> None:
                 cv=args.cv,
             )
         trained_models_reg[name] = model
-        preds = model.predict(test_encoded[features])
-        mae = np.mean(np.abs(test_encoded[y_col] - preds))
-        print(f"      测试集 MAE: {mae:.4f}")
-    print(f"  回归器训练完成，用时 {_fmt(time.perf_counter() - _t)}")
+    print(f"  Done ({_fmt(time.perf_counter() - _t)})")
 
     if use_legacy_wta:
         (output_dir / "legacy_params_used.txt").write_text(
@@ -160,7 +168,7 @@ def main() -> None:
         "Table D.2. XGBoost Hyperparameters",
     )
 
-    print("\n[步骤 4/7] 计算预测指标...")
+    print("\n[Step 4/7] Computing prediction metrics...")
     _t = time.perf_counter()
     results_ideal = get_ideal_results(test_encoded)
     final_df_ideal = calculate_metrics(results_ideal, results_ideal).iloc[[0]].copy()
@@ -171,9 +179,9 @@ def main() -> None:
     results_xgb_demos = get_processed_results(demos_probs, test_encoded, threshold=0)
     results_xgb_all = get_processed_results(all_probs, test_encoded, threshold=0)
     final_df_xgb = calculate_metrics(results_xgb_demos, results_xgb_all)
-    print(f"  完成，用时 {_fmt(time.perf_counter() - _t)}")
+    print(f"  Done ({_fmt(time.perf_counter() - _t)})")
 
-    print("\n[步骤 5/7] 运行 R logit 模型...")
+    print("\n[Step 5/7] Running R logit models...")
     _t = time.perf_counter()
     run_r_logit(root, args.rscript, args.output_subdir)
     logit_demos = pd.read_csv(temp_dir / "logit_probs_demos.csv")
@@ -185,9 +193,9 @@ def main() -> None:
     results_eco_all = get_processed_results(logit_all, test_encoded, threshold=0)
     final_df_eco = calculate_metrics(results_eco_demos, results_eco_all)
     final_df_random = run_monte_carlo_random(test_encoded, n_iterations=args.random_iterations)
-    print(f"  完成，用时 {_fmt(time.perf_counter() - _t)}")
+    print(f"  Done ({_fmt(time.perf_counter() - _t)})")
 
-    print("\n[步骤 6/7] 生成 4.2 节图表与汇总表（R ordered-logit + 配额/预算分析）...")
+    print("\n[Step 6/7] Generating Section 4.2 figures and tables...")
     _t6 = time.perf_counter()
 
     accuracy_data = {
@@ -343,10 +351,10 @@ def main() -> None:
     fig.savefig(output_dir / "Figure_4_assignment_outcomes.png", bbox_inches="tight", dpi=300)
     plt.close(fig)
 
-    print("  运行 R ordered-logit WTA 模型...")
+    print("  Running R ordered-logit WTA models...")
     _t = time.perf_counter()
     run_r_ologit_wta(root, args.rscript, args.output_subdir)
-    print(f"  完成，用时 {_fmt(time.perf_counter() - _t)}")
+    print(f"  Done ({_fmt(time.perf_counter() - _t)})")
     results_xgb_all = append_final_wta_column(results_xgb_all, test_encoded, trained_models_reg, "All")
     results_xgb_demos = append_final_wta_column(results_xgb_demos, test_encoded, trained_models_reg, "Demos")
     results_eco_all = update_eco_results_with_floor(results_eco_all, temp_dir / "wta_preds_all.csv")
@@ -564,10 +572,10 @@ def main() -> None:
     fig.savefig(output_dir / "Figure_6_budget_participation.png", bbox_inches="tight", dpi=300)
     plt.close(fig)
 
-    print(f"  步骤 6 完成，用时 {_fmt(time.perf_counter() - _t6)}")
+    print(f"  Done ({_fmt(time.perf_counter() - _t6)})")
 
     if args.skip_simulation:
-        print(f"\n全部完成！结果保存在 {output_dir}，总用时 {_fmt(time.perf_counter() - t_total)}")
+        print(f"\nAll done! Results saved to {output_dir} (total time: {_fmt(time.perf_counter() - t_total)})")
         return
 
     sim_dir = root / "results" / sim_output_subdir
@@ -584,7 +592,7 @@ def main() -> None:
     }
     test_base = test_raw.copy().reset_index(drop=True)
 
-    print(f"\n[步骤 7/7] 第 4.3 节知识增长模拟（{args.simulation_iterations} 轮）...")
+    print(f"\n[Step 7/7] Section 4.3 knowledge-growth simulation ({args.simulation_iterations} iterations)...")
     _t7 = time.perf_counter()
     for i in range(args.simulation_iterations):
         np.random.seed(RANDOM_SEED + i)
@@ -623,9 +631,9 @@ def main() -> None:
         if done % 20 == 0 or done == args.simulation_iterations:
             elapsed = time.perf_counter() - _t7
             eta = elapsed / done * (args.simulation_iterations - done)
-            print(f"  已完成 {done}/{args.simulation_iterations} 轮，预计还需 {_fmt(eta)}")
+            print(f"  Completed {done}/{args.simulation_iterations} iterations, ETA: {_fmt(eta)}")
 
-    print(f"  模拟完成，用时 {_fmt(time.perf_counter() - _t7)}")
+    print(f"  Simulation done ({_fmt(time.perf_counter() - _t7)})")
     sim_summary = summarize_simulation_results(simulate_results)
     sim_summary.to_csv(sim_dir / "Figure_7_knowledge_growth_summary.csv", encoding="utf-8-sig")
 
@@ -722,5 +730,4 @@ def main() -> None:
     fig.savefig(sim_dir / "Figure_7_knowledge_growth.png", bbox_inches="tight", dpi=300)
     plt.close(fig)
 
-    print(f"\n全部完成！4.2 节结果保存在 {output_dir}，4.3 节结果保存在 {sim_dir}")
-    print(f"总用时 {_fmt(time.perf_counter() - t_total)}")
+    print(f"\nAll done! Section 4.2: {output_dir}  /  Section 4.3: {sim_dir}  (total time: {_fmt(time.perf_counter() - t_total)})")

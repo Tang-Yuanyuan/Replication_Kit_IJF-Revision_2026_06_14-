@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import time
-
 import numpy as np
 import optuna
 import pandas as pd
@@ -33,21 +31,12 @@ def train_xgb_model_bayesian(
         model = xgb.XGBClassifier(**params)
         return cross_val_score(model, train_x, train_y, cv=cv, scoring="accuracy").mean()
 
-    _t0 = time.perf_counter()
-
-    def _log_progress(study: optuna.Study, trial: optuna.trial.FrozenTrial) -> None:
-        done = trial.number + 1
-        if done % 10 == 0 or done == n_trials:
-            elapsed = time.perf_counter() - _t0
-            eta = elapsed / done * (n_trials - done)
-            print(f"      已完成 {done}/{n_trials} 个 trial，预计还需 {eta:.0f} 秒")
-
     study = optuna.create_study(
         direction="maximize",
         sampler=optuna.samplers.TPESampler(seed=RANDOM_SEED),
     )
     optuna.logging.set_verbosity(optuna.logging.WARNING)
-    study.optimize(objective, n_trials=n_trials, callbacks=[_log_progress])
+    study.optimize(objective, n_trials=n_trials)
 
     final_params = {
         **study.best_params,
@@ -87,21 +76,12 @@ def train_xgb_regressor_bayesian(
             scoring="neg_mean_squared_error",
         ).mean()
 
-    _t0 = time.perf_counter()
-
-    def _log_progress(study: optuna.Study, trial: optuna.trial.FrozenTrial) -> None:
-        done = trial.number + 1
-        if done % 10 == 0 or done == n_trials:
-            elapsed = time.perf_counter() - _t0
-            eta = elapsed / done * (n_trials - done)
-            print(f"      已完成 {done}/{n_trials} 个 trial，预计还需 {eta:.0f} 秒")
-
     study = optuna.create_study(
         direction="maximize",
         sampler=optuna.samplers.TPESampler(seed=RANDOM_SEED),
     )
     optuna.logging.set_verbosity(optuna.logging.WARNING)
-    study.optimize(objective, n_trials=n_trials, callbacks=[_log_progress])
+    study.optimize(objective, n_trials=n_trials)
 
     final_params = {
         **study.best_params,
