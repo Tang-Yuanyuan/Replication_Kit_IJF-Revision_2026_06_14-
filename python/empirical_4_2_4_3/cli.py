@@ -76,8 +76,12 @@ def parse_args() -> argparse.Namespace:
     )
     args = parser.parse_args()
     if args.rscript is None:
-        parser.error(
-            "Rscript not found in PATH. "
-            "Install R and ensure Rscript is on PATH, or pass --rscript /path/to/Rscript."
-        )
+        print("Rscript not found in PATH.")
+        while True:
+            raw = input("Please enter the full path to your Rscript executable: ").strip().strip('"')
+            candidate = Path(raw)
+            if candidate.is_file():
+                args.rscript = candidate
+                break
+            print(f"  Path not found: {candidate!r}. Please try again.")
     return args
