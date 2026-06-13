@@ -76,7 +76,7 @@ def main() -> None:
         )
 
     est_clf = 6 * args.n_trials * 0.11
-    est_reg = 6 * (args.reg_n_trials if not args.use_legacy_wta else 5) * 0.22
+    est_reg = 6 * (args.reg_n_trials if not args.use_legacy_wta_params else 5) * 0.22
     est_r   = 60.0
     est_sim = 0.0 if args.skip_simulation else args.simulation_iterations * 23.0
     est_total = est_clf + est_reg + est_r + est_sim
