@@ -870,7 +870,6 @@ def _run(args, root: Path) -> None:
     print()
     print(f"  Simulation done ({_fmt(time.perf_counter() - _t7)})")
     sim_summary = summarize_simulation_results(simulate_results)
-    sim_summary.to_csv(sim_dir / "Figure_7_knowledge_growth_summary.csv", encoding="utf-8-sig")
 
     sim_order = [
         ("random_sm", "Random assignment"),
