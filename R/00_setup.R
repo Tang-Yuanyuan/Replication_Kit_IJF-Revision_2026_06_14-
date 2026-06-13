@@ -4,7 +4,7 @@ if (!exists("PROJECT_ROOT", inherits = TRUE)) {
   PROJECT_ROOT <- normalizePath(getwd(), winslash = "/", mustWork = TRUE)
 }
 
-EMPIRICAL_SECTION <- "empirical4.1"
+EMPIRICAL_SECTION <- "empirical3"
 
 paths <- list(
   root = PROJECT_ROOT,
