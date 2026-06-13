@@ -18,17 +18,28 @@ def train_xgb_model_bayesian(
     sample_weight: "np.ndarray | None" = None,
 ) -> xgb.XGBClassifier:
     def objective(trial: optuna.Trial) -> float:
-        params = {
-            "n_estimators": trial.suggest_int("n_estimators", 20, 200, step=10),
-            "max_depth": trial.suggest_int("max_depth", 2, 8),
-            "learning_rate": trial.suggest_float("learning_rate", 0.005, 0.2),
-            "reg_lambda": trial.suggest_float("reg_lambda", 0.8, 2.6),
-            "gamma": trial.suggest_float("gamma", 1.3, 3.6),
+        if group_type == "All":
+            params = {
+                "n_estimators": trial.suggest_int("n_estimators", 190, 250, step=5),
+                "max_depth": trial.suggest_int("max_depth", 2, 6),
+                "learning_rate": trial.suggest_float("learning_rate", 0.005, 0.2),
+                "reg_lambda": trial.suggest_float("reg_lambda", 2, 2.6),
+                "gamma": trial.suggest_float("gamma", 3, 4),
+            }
+        else:
+            params = {
+                "n_estimators": trial.suggest_int("n_estimators", 140, 150, step=1),
+                "max_depth": trial.suggest_int("max_depth", 4, 6),
+                "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.05),
+                "reg_lambda": trial.suggest_float("reg_lambda", 0.5, 1),
+                "gamma": trial.suggest_float("gamma", 6, 6),
+            }
+        params.update({
             "objective": "binary:logistic",
             "eval_metric": "logloss",
             "random_state": RANDOM_SEED,
             "n_jobs": 1,
-        }
+        })
         model = xgb.XGBClassifier(**params)
         cv_kwargs = {"params": {"sample_weight": sample_weight}} if sample_weight is not None else {}
         return cross_val_score(model, train_x, train_y, cv=cv, scoring="accuracy", **cv_kwargs).mean()
@@ -61,16 +72,27 @@ def train_xgb_regressor_bayesian(
     sample_weight: "np.ndarray | None" = None,
 ) -> xgb.XGBRegressor:
     def objective(trial: optuna.Trial) -> float:
-        params = {
-            "n_estimators": trial.suggest_int("n_estimators", 50, 490, step=20),
-            "max_depth": trial.suggest_int("max_depth", 3, 7),
-            "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.1),
-            "reg_lambda": trial.suggest_float("reg_lambda", 1.0, 5.0),
-            "gamma": trial.suggest_float("gamma", 0, 2.0),
+        if group_type == "All":
+            params = {
+                "n_estimators": trial.suggest_int("n_estimators", 50, 90, step=40),
+                "max_depth": trial.suggest_int("max_depth", 5, 5),
+                "learning_rate": trial.suggest_float("learning_rate", 0, 0.05),
+                "reg_lambda": trial.suggest_float("reg_lambda", 5, 5),
+                "gamma": trial.suggest_float("gamma", 0.5, 0.5),
+            }
+        else:
+            params = {
+                "n_estimators": trial.suggest_int("n_estimators", 50, 100, step=10),
+                "max_depth": trial.suggest_int("max_depth", 4, 5),
+                "learning_rate": trial.suggest_float("learning_rate", 0.3, 0.5),
+                "reg_lambda": trial.suggest_float("reg_lambda", 0, 0.5),
+                "gamma": trial.suggest_float("gamma", 0.5, 0.5),
+            }
+        params.update({
             "objective": "reg:squarederror",
             "random_state": RANDOM_SEED,
             "n_jobs": 1,
-        }
+        })
         model = xgb.XGBRegressor(**params)
         cv_kwargs = {"params": {"sample_weight": sample_weight}} if sample_weight is not None else {}
         return cross_val_score(
