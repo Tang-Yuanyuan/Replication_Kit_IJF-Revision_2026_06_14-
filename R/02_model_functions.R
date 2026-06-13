@@ -96,10 +96,13 @@ build_model_table <- function(models, keep = NULL, omit = NULL) {
                            stringsAsFactors = FALSE)
   bic_row <- as.data.frame(as.list(c("BIC", round(vapply(models, BIC, numeric(1)), 2))),
                            stringsAsFactors = FALSE)
+  n_row <- as.data.frame(as.list(c("N", vapply(models, function(m) nrow(m$fitted.values), integer(1)))),
+                         stringsAsFactors = FALSE)
   names(aic_row) <- names(table)
   names(bic_row) <- names(table)
+  names(n_row) <- names(table)
 
-  table <- rbind(table, aic_row, bic_row)
+  table <- rbind(table, aic_row, bic_row, n_row)
   table
 }
 
@@ -291,6 +294,17 @@ export_compact_results <- function(model_list, group_name, keep_pattern, file) {
     final_tab[[labels[[i]]]] <- values
   }
 
+  aic_row <- as.data.frame(as.list(c("AIC", round(vapply(model_list, AIC, numeric(1)), 2))),
+                           stringsAsFactors = FALSE)
+  bic_row <- as.data.frame(as.list(c("BIC", round(vapply(model_list, BIC, numeric(1)), 2))),
+                           stringsAsFactors = FALSE)
+  n_row <- as.data.frame(as.list(c("N", vapply(model_list, function(m) nrow(m$fitted.values), integer(1)))),
+                         stringsAsFactors = FALSE)
+  names(aic_row) <- names(final_tab)
+  names(bic_row) <- names(final_tab)
+  names(n_row) <- names(final_tab)
+  final_tab <- rbind(final_tab, aic_row, bic_row, n_row)
+
   write.csv(final_tab, file = file, row.names = FALSE, fileEncoding = "UTF-8")
   tex_file <- sub("\\.csv$", ".tex", file)
   if (!identical(tex_file, file)) {
@@ -346,7 +360,17 @@ build_combined_model_table <- function(model_sets, set_labels, keep = NULL, omit
     row
   }
 
-  rbind(table, add_ic_row("AIC", AIC), add_ic_row("BIC", BIC))
+  add_n_row <- function() {
+    values <- c("N")
+    for (model_set in model_sets) {
+      values <- c(values, vapply(model_set, function(m) nrow(m$fitted.values), integer(1)))
+    }
+    row <- as.data.frame(as.list(values), stringsAsFactors = FALSE)
+    names(row) <- names(table)
+    row
+  }
+
+  rbind(table, add_ic_row("AIC", AIC), add_ic_row("BIC", BIC), add_n_row())
 }
 
 export_combined_model_table <- function(model_sets, set_labels, file,
