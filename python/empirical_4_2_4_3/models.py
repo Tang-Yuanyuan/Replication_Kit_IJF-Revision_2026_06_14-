@@ -28,7 +28,7 @@ def train_xgb_model_bayesian(
             "objective": "binary:logistic",
             "eval_metric": "logloss",
             "random_state": RANDOM_SEED,
-            "n_jobs": -1,
+            "n_jobs": 1,
         }
         model = xgb.XGBClassifier(**params)
         return cross_val_score(model, train_x, train_y, cv=cv, scoring="accuracy").mean()
@@ -76,7 +76,7 @@ def train_xgb_regressor_bayesian(
             "gamma": trial.suggest_float("gamma", 0, 2.0),
             "objective": "reg:squarederror",
             "random_state": RANDOM_SEED,
-            "n_jobs": -1,
+            "n_jobs": 1,
         }
         model = xgb.XGBRegressor(**params)
         return cross_val_score(
