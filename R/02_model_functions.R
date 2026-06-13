@@ -1,3 +1,5 @@
+utils::globalVariables(c("paths", "analysis_subsets"))
+
 knowledge_vars <- c(
   "heard_about_global_warming",
   "know_about_low_carbon",
@@ -18,9 +20,11 @@ fit_polr_set <- function(data, outcome, controls, exposure) {
   for (i in seq_along(knowledge_vars)) {
     f <- make_model_formula(outcome, controls, exposure, knowledge_vars[[i]])
     m <- MASS::polr(f, data = data, Hess = TRUE)
-    # brant() re-evaluates model$call in the global env; replace the formula slot
-    # with the evaluated formula object so brant can find it without local bindings.
+    # brant() rebuilds a stats::model.frame() call from model$call and eval()s it
+    # in the caller's environment. Store evaluated formula and data directly so
+    # brant doesn't try to look up local variable names that no longer exist.
     m$call$formula <- f
+    m$call$data    <- data
     models[[i]] <- m
   }
 
@@ -166,22 +170,75 @@ capture_to_file <- function(expr, file) {
   utils::capture.output(expr, file = con)
 }
 
-run_brant_tests <- function(models) {
-  safe_brant <- function(model) {
-    tryCatch(brant::brant(model), error = function(e) e$message)
+run_brant_e6 <- function(models, prepared) {
+  df      <- prepared$data
+  subsets <- analysis_subsets(df)
+
+  # car2, green3, green4: drop province/weekday/weather before running brant
+  # because brant fits many internal binary logits and convergence is unreliable
+  # when factor fixed effects add too many columns with sparse cells.
+  no_fe_controls <- setdiff(
+    prepared$base_controls,
+    c("province", "weekday", prepared$weather_control)
+  )
+
+  fit_no_fe <- function(outcome, controls, exposure, knowledge, data) {
+    f <- make_model_formula(outcome, controls, exposure, knowledge)
+    m <- MASS::polr(f, data = data, Hess = TRUE)
+    m$call$formula <- f
+    m$call$data    <- data
+    m
   }
 
-  capture_to_file({
-    for (group in names(models)) {
-      cat("\n", paste(rep("=", 70), collapse = ""), "\n", sep = "")
-      cat("Brant tests:", group, "\n")
-      cat(paste(rep("=", 70), collapse = ""), "\n", sep = "")
-      for (model_name in names(models[[group]])) {
-        cat("\nModel:", model_name, "\n")
-        print(safe_brant(models[[group]][[model_name]]))
+  car2_nfe   <- fit_no_fe("wta_car",   no_fe_controls, "caruse",
+                          "know_about_low_carbon",        subsets$car)
+  green3_nfe <- fit_no_fe("wta_green", no_fe_controls, "mainuseelec",
+                          "know_about_carbon_neutrality", subsets$green)
+  green4_nfe <- fit_no_fe("wta_green", no_fe_controls, "mainuseelec",
+                          "know_about_carbon_policy",     subsets$green)
+
+  omnibus <- function(model) {
+    res <- tryCatch(
+      withCallingHandlers(
+        brant::brant(model),
+        warning = function(w) invokeRestart("muffleWarning")
+      ),
+      error = function(e) {
+        warning("brant error: ", e$message)
+        NULL
       }
+    )
+    if (is.null(res) || !is.matrix(res) || nrow(res) == 0) {
+      return(c(Chi2 = NA_real_, DF = NA_integer_, P_value = NA_real_))
     }
-  }, file.path(paths$tables, "Table_E.6_brant_tests.txt"))
+    c(Chi2 = res[1, 1], DF = res[1, 2], P_value = res[1, 3])
+  }
+
+  model_list <- list(
+    models$car[["global_warming"]],
+    car2_nfe,
+    models$car[["neutrality"]],
+    models$car[["policy"]],
+    models$elec[["global_warming"]],
+    models$elec[["low_carbon"]],
+    models$elec[["neutrality"]],
+    models$elec[["policy"]],
+    models$green[["global_warming"]],
+    models$green[["low_carbon"]],
+    green3_nfe,
+    green4_nfe
+  )
+
+  rows <- lapply(model_list, omnibus)
+  result <- as.data.frame(do.call(rbind, rows))
+  result$Model <- paste0("(", seq_len(nrow(result)), ")")
+  result <- result[, c("Model", "Chi2", "DF", "P_value")]
+
+  csv_path <- file.path(paths$tables, "Table_E.6_brant_tests.csv")
+  write.csv(result, csv_path, row.names = FALSE, fileEncoding = "UTF-8")
+
+  tex_path <- file.path(paths$tables, "Table_E.6_brant_tests.tex")
+  write_latex_table(result, tex_path, title = "Table E.6. Brant Test (Omnibus)")
 }
 
 tidy_ordinal_model <- function(model) {
@@ -230,6 +287,20 @@ export_compact_results <- function(model_list, group_name, keep_pattern, file) {
     }
     final_tab[[labels[[i]]]] <- values
   }
+
+  add_stat_row <- function(label, fun) {
+    vals <- vapply(model_list, function(m) as.character(fun(m)), character(1))
+    row <- as.data.frame(as.list(c(label, vals)), stringsAsFactors = FALSE)
+    names(row) <- names(final_tab)
+    row
+  }
+
+  final_tab <- rbind(
+    final_tab,
+    add_stat_row("N",   function(m) length(m$fitted.values)),
+    add_stat_row("AIC", function(m) round(AIC(m), 2)),
+    add_stat_row("BIC", function(m) round(BIC(m), 2))
+  )
 
   write.csv(final_tab, file = file, row.names = FALSE, fileEncoding = "UTF-8")
   tex_file <- sub("\\.csv$", ".tex", file)

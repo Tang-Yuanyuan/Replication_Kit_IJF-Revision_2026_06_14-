@@ -148,7 +148,7 @@ Key outputs are named to match the manuscript numbering:
 - Figures: `F_B.1.png`, `F_B.2.png`
 - Main tables: `Table_3_main_transport`, `Table_4_main_home_energy`,
   `Table_5_main_green_electricity`
-- Diagnostic tables: `Table_E.6_brant_tests` (proportional odds assumption tests for all ordered logit models)
+- Diagnostic tables: `Table_E.6_brant_tests` (omnibus Brant test: Chi2, DF, p-value for all 12 ordered logit models)
 - Robustness tables: `Table_F.7_transport_robustness`,
   `Table_F.8_home_energy_conditioner_time`,
   `Table_F.9_green_electricity_importance`
