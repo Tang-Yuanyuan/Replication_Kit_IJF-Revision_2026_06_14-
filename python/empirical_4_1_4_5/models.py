@@ -16,23 +16,33 @@ def train_xgb_model_bayesian(
     n_trials: int = 50,
     cv: int = 3,
     sample_weight: "np.ndarray | None" = None,
+    weighted: bool = False,
 ) -> xgb.XGBClassifier:
     def objective(trial: optuna.Trial) -> float:
-        if group_type == "All":
-            params = {
-                "n_estimators": trial.suggest_int("n_estimators", 190, 250, step=5),
-                "max_depth": trial.suggest_int("max_depth", 2, 6),
-                "learning_rate": trial.suggest_float("learning_rate", 0.005, 0.2),
-                "reg_lambda": trial.suggest_float("reg_lambda", 2, 2.6),
-                "gamma": trial.suggest_float("gamma", 3, 4),
-            }
+        if weighted:
+            if group_type == "All":
+                params = {
+                    "n_estimators": trial.suggest_int("n_estimators", 190, 250, step=5),
+                    "max_depth": trial.suggest_int("max_depth", 2, 6),
+                    "learning_rate": trial.suggest_float("learning_rate", 0.005, 0.2),
+                    "reg_lambda": trial.suggest_float("reg_lambda", 2, 2.6),
+                    "gamma": trial.suggest_float("gamma", 3, 4),
+                }
+            else:
+                params = {
+                    "n_estimators": trial.suggest_int("n_estimators", 140, 150, step=1),
+                    "max_depth": trial.suggest_int("max_depth", 4, 6),
+                    "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.05),
+                    "reg_lambda": trial.suggest_float("reg_lambda", 0.5, 1),
+                    "gamma": trial.suggest_float("gamma", 6, 6),
+                }
         else:
             params = {
-                "n_estimators": trial.suggest_int("n_estimators", 140, 150, step=1),
-                "max_depth": trial.suggest_int("max_depth", 4, 6),
-                "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.05),
-                "reg_lambda": trial.suggest_float("reg_lambda", 0.5, 1),
-                "gamma": trial.suggest_float("gamma", 6, 6),
+                "n_estimators": trial.suggest_int("n_estimators", 20, 200, step=10),
+                "max_depth": trial.suggest_int("max_depth", 2, 8),
+                "learning_rate": trial.suggest_float("learning_rate", 0.005, 0.2),
+                "reg_lambda": trial.suggest_float("reg_lambda", 0.8, 2.6),
+                "gamma": trial.suggest_float("gamma", 1.3, 3.6),
             }
         params.update({
             "objective": "binary:logistic",
@@ -70,23 +80,33 @@ def train_xgb_regressor_bayesian(
     n_trials: int = 50,
     cv: int = 3,
     sample_weight: "np.ndarray | None" = None,
+    weighted: bool = False,
 ) -> xgb.XGBRegressor:
     def objective(trial: optuna.Trial) -> float:
-        if group_type == "All":
-            params = {
-                "n_estimators": trial.suggest_int("n_estimators", 50, 90, step=40),
-                "max_depth": trial.suggest_int("max_depth", 5, 5),
-                "learning_rate": trial.suggest_float("learning_rate", 0, 0.05),
-                "reg_lambda": trial.suggest_float("reg_lambda", 5, 5),
-                "gamma": trial.suggest_float("gamma", 0.5, 0.5),
-            }
+        if weighted:
+            if group_type == "All":
+                params = {
+                    "n_estimators": trial.suggest_int("n_estimators", 50, 90, step=40),
+                    "max_depth": trial.suggest_int("max_depth", 5, 5),
+                    "learning_rate": trial.suggest_float("learning_rate", 0, 0.05),
+                    "reg_lambda": trial.suggest_float("reg_lambda", 5, 5),
+                    "gamma": trial.suggest_float("gamma", 0.5, 0.5),
+                }
+            else:
+                params = {
+                    "n_estimators": trial.suggest_int("n_estimators", 50, 100, step=10),
+                    "max_depth": trial.suggest_int("max_depth", 4, 5),
+                    "learning_rate": trial.suggest_float("learning_rate", 0.3, 0.5),
+                    "reg_lambda": trial.suggest_float("reg_lambda", 0, 0.5),
+                    "gamma": trial.suggest_float("gamma", 0.5, 0.5),
+                }
         else:
             params = {
-                "n_estimators": trial.suggest_int("n_estimators", 50, 100, step=10),
-                "max_depth": trial.suggest_int("max_depth", 4, 5),
-                "learning_rate": trial.suggest_float("learning_rate", 0.3, 0.5),
-                "reg_lambda": trial.suggest_float("reg_lambda", 0, 0.5),
-                "gamma": trial.suggest_float("gamma", 0.5, 0.5),
+                "n_estimators": trial.suggest_int("n_estimators", 50, 490, step=20),
+                "max_depth": trial.suggest_int("max_depth", 3, 7),
+                "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.1),
+                "reg_lambda": trial.suggest_float("reg_lambda", 1.0, 5.0),
+                "gamma": trial.suggest_float("gamma", 0, 2.0),
             }
         params.update({
             "objective": "reg:squarederror",

@@ -639,7 +639,7 @@ def _run(args, root: Path) -> None:
             w_trained_models[_wname] = train_xgb_model_bayesian(
                 _wdf[_wfeat], _wdf[_wyc],
                 group_type=_wgt, n_trials=args.n_trials, cv=args.cv,
-                sample_weight=_w_by_energy[_wenergy],
+                sample_weight=_w_by_energy[_wenergy], weighted=True,
             )
         print(f"Done ({_fmt(time.perf_counter() - _t)})")
 
@@ -651,7 +651,7 @@ def _run(args, root: Path) -> None:
             w_trained_models_reg[_wname] = train_xgb_regressor_bayesian(
                 _wdf[_wfeat], _wdf[_wyc],
                 group_type=_wgt, n_trials=args.reg_n_trials, cv=args.cv,
-                sample_weight=_w_by_energy[_wenergy],
+                sample_weight=_w_by_energy[_wenergy], weighted=True,
             )
         print(f"Done ({_fmt(time.perf_counter() - _t)})")
 
@@ -678,31 +678,8 @@ def _run(args, root: Path) -> None:
         w_reco_d = update_eco_results_with_floor(w_reco_d, w_temp_dir / "wta_preds_demos.csv")
         print(f"Done ({_fmt(time.perf_counter() - _t)})")
 
-        print(f"[Weighted 4/{_wN}] Generating weighted Sections 4.1–4.4 figures (G.3–G.6)...", end="  ", flush=True)
+        print(f"[Weighted 4/{_wN}] Generating weighted Sections 4.1–4.4 figures (G.4–G.6)...", end="  ", flush=True)
         _t = time.perf_counter()
-
-        # G.3 — prediction accuracy
-        w_acc = pd.Series({
-            "Logistic regression I":  clean_pct(w_feco.loc["Demos", "Perfect_Rate"]) * 100,
-            "Logistic regression II": clean_pct(w_feco.loc["All",  "Perfect_Rate"]) * 100,
-            "XGBoost algorithm I":    clean_pct(w_fxgb.loc["Demos", "Perfect_Rate"]) * 100,
-            "XGBoost algorithm II":   clean_pct(w_fxgb.loc["All",  "Perfect_Rate"]) * 100,
-        })
-        w_acc.to_csv(w_output_dir / "Figure_G.3_prediction_accuracy_data.csv", header=["Accuracy"])
-        fig, ax = plt.subplots(figsize=(10, 6), dpi=120)
-        xp = np.arange(len(w_acc))
-        bs = ax.bar(xp, w_acc.values, 0.4, color="black")
-        ax.set_ylim(60, max(w_acc.max() + 2, 62))
-        ax.set_ylabel("Prediction Accuracy (%)", fontsize=12)
-        ax.set_xticks(xp); ax.set_xticklabels(w_acc.index, rotation=15, ha="right", fontsize=11)
-        ax.spines["top"].set_visible(False); ax.spines["right"].set_visible(False)
-        for b in bs:
-            h = b.get_height()
-            ax.annotate(f"{h:.2f}%", xy=(b.get_x() + b.get_width() / 2, h),
-                        xytext=(0, 5), textcoords="offset points", ha="center", va="bottom", fontsize=11)
-        fig.tight_layout()
-        fig.savefig(w_output_dir / "Figure_G.3_prediction_accuracy.png", bbox_inches="tight", dpi=300)
-        plt.close(fig)
 
         # G.4 — assignment outcomes (also defines w_df_plot for G.7 baseline)
         _wkeys = ["Random", "Logit_All", "Logit_Demos", "XGB_All", "XGB_Demos", "Ideal"]
