@@ -30,7 +30,7 @@ def train_xgb_model_bayesian(
             "n_jobs": 1,
         }
         model = xgb.XGBClassifier(**params)
-        cv_kwargs = {"fit_params": {"sample_weight": sample_weight}} if sample_weight is not None else {}
+        cv_kwargs = {"params": {"sample_weight": sample_weight}} if sample_weight is not None else {}
         return cross_val_score(model, train_x, train_y, cv=cv, scoring="accuracy", **cv_kwargs).mean()
 
     study = optuna.create_study(
@@ -72,7 +72,7 @@ def train_xgb_regressor_bayesian(
             "n_jobs": 1,
         }
         model = xgb.XGBRegressor(**params)
-        cv_kwargs = {"fit_params": {"sample_weight": sample_weight}} if sample_weight is not None else {}
+        cv_kwargs = {"params": {"sample_weight": sample_weight}} if sample_weight is not None else {}
         return cross_val_score(
             model,
             train_x,
