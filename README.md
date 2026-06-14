@@ -100,12 +100,20 @@ revision_package/
 Rscript install.R
 ```
 
-Installs 5 direct packages and 32 transitive dependencies at tested versions.
+Installs 5 direct packages and 32 transitive dependencies at the exact
+versions used by the author, using `remotes::install_version()`. This is the
+recommended path for exact reproducibility.
+
 If a package fails at the pinned version, omit the version constraint — the
 latest CRAN release is typically compatible.
 
 Direct dependencies: `MASS` (7.3-65), `dplyr` (1.2.0), `brant` (0.3-0),
 `survey` (4.5), `ggplot2` (4.0.3).
+
+> **Note:** If Step 1 is skipped, `run_all.R` will automatically install any
+> missing packages from CRAN before proceeding. However, those installations
+> use the latest available versions rather than the pinned ones, so exact
+> version matching is not guaranteed.
 
 ### Step 2 — Install Python packages
 
