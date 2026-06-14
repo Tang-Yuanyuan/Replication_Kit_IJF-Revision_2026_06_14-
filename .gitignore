@@ -1,0 +1,24 @@
+# Generated outputs — run the scripts to reproduce these
+data/temp/
+results/
+
+# Internal project notes (not part of the replication kit)
+CLAUDE.md
+HANDOFF.md
+ENGINEERING_PLAN.md
+
+# Historical/superseded scripts
+archive/
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+pyrightconfig.json
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
