@@ -880,7 +880,9 @@ def _run(args, root: Path) -> None:
             ax1.annotate(f"{val:.2f}", xy=(idx + wd / 2, val), xytext=(0, 5), textcoords="offset points", ha="center", fontsize=9)
         for idx, val in enumerate(w_cf_rate):
             ax2.annotate(f"{val:.2f}%", xy=(idx, val), xytext=(0, 8), textcoords="offset points", ha="center", fontsize=9, weight="bold")
-        ax1.set_ylim(15, max(w_bl_cost.max(), w_cf_cost.max()) + 2)
+        _w_ymax = max(w_bl_cost.max(), w_cf_cost.max()) + 2
+        ax1.set_ylim(17.5, _w_ymax)
+        ax1.set_yticks(np.arange(17.5, _w_ymax, 2.5))
         ax1.set_ylabel("Average Compensation (¥)", fontsize=12)
         ax2.set_ylabel("Acceptance Rate (%)", fontsize=12)
         ax1.set_xticks(xp); ax1.set_xticklabels(w_sim_labels, rotation=15, ha="right")
@@ -1028,7 +1030,9 @@ def _run(args, root: Path) -> None:
         ax2.annotate(f"{val:.2f}%", xy=(idx, val), xytext=(0, 8),
                      textcoords="offset points", ha="center", fontsize=9, weight="bold")
 
-    ax1.set_ylim(15, max(baseline_cost.max(), cf_cost.max()) + 2)
+    _ymax = max(baseline_cost.max(), cf_cost.max()) + 2
+    ax1.set_ylim(17.5, _ymax)
+    ax1.set_yticks(np.arange(17.5, _ymax, 2.5))
     ax1.set_ylabel("Average Compensation (¥)", fontsize=12)
     ax2.set_ylabel("Acceptance Rate (%)", fontsize=12)
     ax1.set_xticks(x_pos)
