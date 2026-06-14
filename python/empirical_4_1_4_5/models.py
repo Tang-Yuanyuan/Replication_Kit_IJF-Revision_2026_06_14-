@@ -48,7 +48,7 @@ def train_xgb_model_bayesian(
             "objective": "binary:logistic",
             "eval_metric": "logloss",
             "random_state": RANDOM_SEED,
-            "n_jobs": -1 if weighted else 1,
+            "n_jobs": 1,
         })
         model = xgb.XGBClassifier(**params)
         cv_kwargs = {"params": {"sample_weight": sample_weight}} if sample_weight is not None else {}
@@ -111,7 +111,7 @@ def train_xgb_regressor_bayesian(
         params.update({
             "objective": "reg:squarederror",
             "random_state": RANDOM_SEED,
-            "n_jobs": -1 if weighted else 1,
+            "n_jobs": 1,
         })
         model = xgb.XGBRegressor(**params)
         cv_kwargs = {"params": {"sample_weight": sample_weight}} if sample_weight is not None else {}
