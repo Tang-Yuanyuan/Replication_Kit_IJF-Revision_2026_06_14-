@@ -7,17 +7,17 @@ Yuanyuan Tang (School of Applied Economics, Renmin University of China)
 The code in this replication kit reproduces all figures and tables in the
 empirical sections of the paper "Designing Cost-effective Climate Policies
 through Preference Prediction: Evidence from Chinese Households'
-Low-carbon Alternatives." The analysis combines R (Section 4.1:
+Low-carbon Alternatives." The analysis combines R (Section 3:
 ordered logit models, robustness checks, and post-stratification weighting)
 and Python (Sections 4.1–4.5: machine-learning prediction, assignment
 optimisation, and knowledge-growth simulation).
 
-The kit generates **12 figures** and **19 tables** across Sections 4.1–4.5
+The kit generates **12 figures** and **19 tables** across Sections 3–4.5
 and Appendices B–G.
 
 ### Generated outputs
 
-**Section 4.1 — Ordered logit models** (written to `results/empirical3/`)
+**Section 3 — Ordered logit models** (written to `results/empirical3/`)
 
 | Output                                          | File name                                             |
 | ----------------------------------------------- | ----------------------------------------------------- |
