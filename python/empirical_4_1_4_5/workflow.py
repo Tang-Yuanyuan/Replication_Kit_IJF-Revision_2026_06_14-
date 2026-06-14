@@ -831,7 +831,7 @@ def _run(args, root: Path) -> None:
     test_base = test_raw.copy().reset_index(drop=True)
 
     # ── Weighted Section 4.5 simulation ──────────────────────────────────────
-    if args.weighted:
+    if args.weighted and not args.skip_simulation:
         w_sim_dir = root / "results" / w_sim_subdir
         w_sim_dir.mkdir(parents=True, exist_ok=True)
         w_sim_temp_dir = temp_root / w_sim_subdir
