@@ -19,42 +19,42 @@ and Appendices B-G.
 
 **Section 3 -- Ordered logit models** (written to `results/empirical3/`)
 
-| Output                                          | File name                                           |
-| ----------------------------------------------- | --------------------------------------------------- |
-| Descriptive statistics                          | `Table1_categorical.csv`, `Table1_continuous.csv`  |
-| WTA distribution                                | `Table2_wta_distribution.csv`                      |
-| Main results: transport                         | `Table_3_main_transport.csv/.tex`                  |
-| Main results: home energy                       | `Table_4_main_home_energy.csv/.tex`                |
-| Main results: green electricity                 | `Table_5_main_green_electricity.csv/.tex`          |
+| Output                                          | File name                                             |
+| ----------------------------------------------- | ----------------------------------------------------- |
+| Descriptive statistics                          | `Table1_categorical.csv`, `Table1_continuous.csv` |
+| WTA distribution                                | `Table2_wta_distribution.csv`                       |
+| Main results: transport                         | `Table_3_main_transport.csv/.tex`                   |
+| Main results: home energy                       | `Table_4_main_home_energy.csv/.tex`                 |
+| Main results: green electricity                 | `Table_5_main_green_electricity.csv/.tex`           |
 | Appendix B: descriptive figures                 | `F_B.1.png`, `F_B.2.png`                          |
-| Appendix E: Brant tests                         | `Table_E.6_brant_tests.csv/.tex`                   |
-| Appendix F: robustness, transport               | `Table_F.7_transport_robustness.csv/.tex`          |
-| Appendix F: robustness, home energy             | `Table_F.8_home_energy_conditioner_time.csv/.tex`  |
-| Appendix F: robustness, green electricity       | `Table_F.9_green_electricity_importance.csv/.tex`  |
-| Appendix G: covariate balance (unweighted)      | `Table_G.10_unweighted_balance.csv/.tex`           |
-| Appendix G: covariate balance (weighted)        | `Table_G.11_weighted_balance_test.csv/.tex`        |
-| Appendix G: weighted results, transport         | `Table_G.12_weighted_transport.csv/.tex`           |
-| Appendix G: weighted results, home energy       | `Table_G.13_weighted_home_energy.csv/.tex`         |
-| Appendix G: weighted results, green electricity | `Table_G.14_weighted_green_electricity.csv/.tex`   |
+| Appendix E: Brant tests                         | `Table_E.6_brant_tests.csv/.tex`                    |
+| Appendix F: robustness, transport               | `Table_F.7_transport_robustness.csv/.tex`           |
+| Appendix F: robustness, home energy             | `Table_F.8_home_energy_conditioner_time.csv/.tex`   |
+| Appendix F: robustness, green electricity       | `Table_F.9_green_electricity_importance.csv/.tex`   |
+| Appendix G: covariate balance (unweighted)      | `Table_G.10_unweighted_balance.csv/.tex`            |
+| Appendix G: covariate balance (weighted)        | `Table_G.11_weighted_balance_test.csv/.tex`         |
+| Appendix G: weighted results, transport         | `Table_G.12_weighted_transport.csv/.tex`            |
+| Appendix G: weighted results, home energy       | `Table_G.13_weighted_home_energy.csv/.tex`          |
+| Appendix G: weighted results, green electricity | `Table_G.14_weighted_green_electricity.csv/.tex`    |
 
-**Sections 4.2-4.4 -- Machine-learning prediction and assignment** (written to `results/empirical4.1_4.4/`)
+**Sections 4.1-4.4 -- Machine-learning prediction and assignment** (written to `results/empirical4.1_4.4/`)
 
 | Output                              | File name                                      |
 | ----------------------------------- | ---------------------------------------------- |
-| Figure 3: prediction accuracy       | `Figure_3_prediction_accuracy.png`             |
-| Figure 4: assignment outcomes       | `Figure_4_assignment_outcomes.png`             |
-| Figure 5: quota compensation        | `Figure_5_quota_compensation.png`              |
-| Figure 6: budget participation      | `Figure_6_budget_participation.png`            |
-| Appendix C: XGBoost hyperparameters | `Table_C.1_xgboost_hyperparameters.csv/.tex`   |
-| Appendix D: prediction accuracy     | `Table_D.2_prediction_accuracy.csv`            |
-| Appendix D: assignment outcomes     | `Table_D.3_assignment_outcomes.csv/.tex`       |
-| Appendix D: quota accept cost       | `Table_D.4_quota_accept_cost.csv/.tex`         |
-| Appendix D: budget participation    | `Table_D.5_budget_participation.csv/.tex`      |
+| Figure 3: prediction accuracy       | `Figure_3_prediction_accuracy.png`           |
+| Figure 4: assignment outcomes       | `Figure_4_assignment_outcomes.png`           |
+| Figure 5: quota compensation        | `Figure_5_quota_compensation.png`            |
+| Figure 6: budget participation      | `Figure_6_budget_participation.png`          |
+| Appendix C: XGBoost hyperparameters | `Table_C.1_xgboost_hyperparameters.csv/.tex` |
+| Appendix D: prediction accuracy     | `Table_D.2_prediction_accuracy.csv`          |
+| Appendix D: assignment outcomes     | `Table_D.3_assignment_outcomes.csv/.tex`     |
+| Appendix D: quota accept cost       | `Table_D.4_quota_accept_cost.csv/.tex`       |
+| Appendix D: budget participation    | `Table_D.5_budget_participation.csv/.tex`    |
 
 **Section 5 -- Knowledge-growth simulation** (written to `results/empirical5/`)
 
-| Output                                  | File name                               |
-| --------------------------------------- | --------------------------------------- |
+| Output                                  | File name                                 |
+| --------------------------------------- | ----------------------------------------- |
 | Figure 7: knowledge-growth trajectories | `Figure_7_knowledge_growth.png`         |
 | Summary statistics                      | `Figure_7_knowledge_growth_summary.csv` |
 
@@ -62,11 +62,11 @@ and Appendices B-G.
 
 | Output                                    | File name                               |
 | ----------------------------------------- | --------------------------------------- |
-| Figure G.3: weighted prediction accuracy  | `Figure_G.3_prediction_accuracy.png`   |
-| Figure G.4: weighted assignment outcomes  | `Figure_G.4_assignment_outcomes.png`   |
-| Figure G.5: weighted quota compensation   | `Figure_G.5_quota_compensation.png`    |
-| Figure G.6: weighted budget participation | `Figure_G.6_budget_participation.png`  |
-| Figure G.7: weighted knowledge growth     | `Figure_G.7_knowledge_growth.png`      |
+| Figure G.3: weighted prediction accuracy  | `Figure_G.3_prediction_accuracy.png`  |
+| Figure G.4: weighted assignment outcomes  | `Figure_G.4_assignment_outcomes.png`  |
+| Figure G.5: weighted quota compensation   | `Figure_G.5_quota_compensation.png`   |
+| Figure G.6: weighted budget participation | `Figure_G.6_budget_participation.png` |
+| Figure G.7: weighted knowledge growth     | `Figure_G.7_knowledge_growth.png`     |
 
 ### Repository structure
 
