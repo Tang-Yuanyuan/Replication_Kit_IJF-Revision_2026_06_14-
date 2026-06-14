@@ -880,6 +880,7 @@ def _run(args, root: Path) -> None:
             ax1.annotate(f"{val:.2f}", xy=(idx + wd / 2, val), xytext=(0, 5), textcoords="offset points", ha="center", fontsize=9)
         for idx, val in enumerate(w_cf_rate):
             ax2.annotate(f"{val:.2f}%", xy=(idx, val), xytext=(0, 8), textcoords="offset points", ha="center", fontsize=9, weight="bold")
+        ax1.set_ylim(10, max(w_bl_cost.max(), w_cf_cost.max()) + 2)
         ax1.set_ylabel("Average Compensation (¥)", fontsize=12)
         ax2.set_ylabel("Acceptance Rate (%)", fontsize=12)
         ax1.set_xticks(xp); ax1.set_xticklabels(w_sim_labels, rotation=15, ha="right")
@@ -952,6 +953,7 @@ def _run(args, root: Path) -> None:
     print()
     print(f"  Simulation done ({_fmt(time.perf_counter() - _t7)})")
     sim_summary = summarize_simulation_results(simulate_results)
+    sim_summary.to_csv(sim_dir / "Figure_7_knowledge_growth_summary.csv", encoding="utf-8-sig")
 
     sim_order = [
         ("random_sm", "Random assignment"),
@@ -1026,6 +1028,7 @@ def _run(args, root: Path) -> None:
         ax2.annotate(f"{val:.2f}%", xy=(idx, val), xytext=(0, 8),
                      textcoords="offset points", ha="center", fontsize=9, weight="bold")
 
+    ax1.set_ylim(10, max(baseline_cost.max(), cf_cost.max()) + 2)
     ax1.set_ylabel("Average Compensation (¥)", fontsize=12)
     ax2.set_ylabel("Acceptance Rate (%)", fontsize=12)
     ax1.set_xticks(x_pos)
