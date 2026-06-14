@@ -82,7 +82,6 @@ revision_package/
 - run_empirical4_and_5.py          # Entry point: Python workflow (Sections 4.1-4.4 and 5)
 - install.R                        # Installs R packages at pinned versions
 - requirements.txt                 # Python packages at pinned versions
-- archive/historical_sources/      # Original ad hoc scripts (not part of workflow)
 ```
 
 ## Instructions and computational requirements
@@ -150,6 +149,17 @@ python run_empirical4_and_5.py
 ```
 
 **Step 3 must complete before Step 4.**
+
+The script will prompt twice before running:
+
+```
+Also run weighted analysis (Appendix G)? [y/N]
+Also run legacy WTA comparison? [y/N]
+```
+
+Answer `y` to include Appendix G outputs; answer `N` (or press Enter) to
+reproduce only the main-text results. Both options can also be set via
+command-line flags to skip the prompts (see below).
 
 Reproduces Sections 4.1-4.4 (ML prediction, assignment optimisation) and
 Section 5 (knowledge-growth simulation). Main outputs go to
