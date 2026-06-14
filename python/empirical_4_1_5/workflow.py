@@ -347,7 +347,7 @@ def _run(args, root: Path) -> None:
         )
         ax1.set_ylim(df_plot["Cost"].min() - 2, df_plot["Cost"].max() + 2)
         ax2.set_ylim(df_plot["Rate"].min() - 2, 100)
-        ax1.set_ylabel("Average Compensation (楼)", fontsize=12)
+        ax1.set_ylabel("Average Compensation (¥)", fontsize=12)
         ax2.set_ylabel("Acceptance Rate (%)", fontsize=12)
         ax1.set_xticks(x_pos)
         ax1.set_xticklabels(labels, rotation=25, ha="right")
@@ -494,7 +494,7 @@ def _run(args, root: Path) -> None:
         fig.text(
             0.04,
             0.5,
-            "Compensation Spending (楼/month/household)",
+            "Compensation Spending (¥/month/household)",
             va="center",
             rotation="vertical",
             fontsize=12,
@@ -590,7 +590,7 @@ def _run(args, root: Path) -> None:
                     linewidth=1.8,
                     markersize=8,
                 )
-        ax.set_xlabel("Mitigation Budget (楼/month)", fontsize=12)
+        ax.set_xlabel("Mitigation Budget (¥/month)", fontsize=12)
         ax.set_ylabel("Number of Participating Households", fontsize=12)
         ax.set_xticks(current_budgets)
         ax.set_xlim(min(current_budgets) - 200, max(current_budgets) + 200)
@@ -731,7 +731,7 @@ def _run(args, root: Path) -> None:
         ax2.plot(xp + xoff, w_df_plot["Rate"], color="#7f7f7f", marker="o", linestyle="--", linewidth=2, markersize=8, label="Acceptance Rate", zorder=5)
         ax1.set_ylim(w_df_plot["Cost"].min() - 2, w_df_plot["Cost"].max() + 2)
         ax2.set_ylim(w_df_plot["Rate"].min() - 2, 100)
-        ax1.set_ylabel("Average Compensation (楼)", fontsize=12)
+        ax1.set_ylabel("Average Compensation (¥)", fontsize=12)
         ax2.set_ylabel("Acceptance Rate (%)", fontsize=12)
         ax1.set_xticks(xp); ax1.set_xticklabels(_wlbls, rotation=25, ha="right")
         ax1.spines["top"].set_visible(False); ax1.spines["right"].set_visible(False)
@@ -784,7 +784,7 @@ def _run(args, root: Path) -> None:
         d = 0.015
         atop.plot((-d, +d), (-d, +d), transform=atop.transAxes, color="black", clip_on=False)
         abot.plot((-d, +d), (1 - d, 1 + d), transform=abot.transAxes, color="black", clip_on=False)
-        fig.text(0.04, 0.5, "Compensation Spending (楼/month/household)", va="center", rotation="vertical", fontsize=12)
+        fig.text(0.04, 0.5, "Compensation Spending (¥/month/household)", va="center", rotation="vertical", fontsize=12)
         abot.set_xlabel("Targeted Numbers of Households", fontsize=12); abot.set_xticks(wqn)
         atop.legend(loc="center left", bbox_to_anchor=(1.05, 0.3), frameon=False, fontsize=11)
         fig.savefig(w_output_dir / "Figure_G.5_quota_compensation.png", bbox_inches="tight", dpi=300)
@@ -816,7 +816,7 @@ def _run(args, root: Path) -> None:
             if gn in wb_pdf.index:
                 ax.plot(current_budgets, wb_pdf.loc[gn].values, color=st["color"], linestyle=st["linestyle"],
                         marker=st["marker"], label=f"{st['label_base']} ({wb_avg.loc[gn]:.2%})", linewidth=1.8, markersize=8)
-        ax.set_xlabel("Mitigation Budget (楼/month)", fontsize=12); ax.set_ylabel("Number of Participating Households", fontsize=12)
+        ax.set_xlabel("Mitigation Budget (¥/month)", fontsize=12); ax.set_ylabel("Number of Participating Households", fontsize=12)
         ax.set_xticks(current_budgets); ax.set_xlim(min(current_budgets) - 200, max(current_budgets) + 200)
         ax.spines["top"].set_visible(False); ax.spines["right"].set_visible(False)
         ax.set_ylim(wb_pdf.min().min() - 5, wb_pdf.max().max() + 5)
@@ -912,7 +912,7 @@ def _run(args, root: Path) -> None:
         _w_ymax = max(w_bl_cost.max(), w_cf_cost.max()) + 2
         ax1.set_ylim(17.5, _w_ymax)
         ax1.set_yticks(np.arange(17.5, _w_ymax, 2.5))
-        ax1.set_ylabel("Average Compensation (楼)", fontsize=12)
+        ax1.set_ylabel("Average Compensation (¥)", fontsize=12)
         ax2.set_ylabel("Acceptance Rate (%)", fontsize=12)
         ax1.set_xticks(xp); ax1.set_xticklabels(w_sim_labels, rotation=15, ha="right")
         ax1.spines["top"].set_visible(False); ax2.spines["top"].set_visible(False)
@@ -1062,7 +1062,7 @@ def _run(args, root: Path) -> None:
     _ymax = max(baseline_cost.max(), cf_cost.max()) + 2
     ax1.set_ylim(17.5, _ymax)
     ax1.set_yticks(np.arange(17.5, _ymax, 2.5))
-    ax1.set_ylabel("Average Compensation (楼)", fontsize=12)
+    ax1.set_ylabel("Average Compensation (¥)", fontsize=12)
     ax2.set_ylabel("Acceptance Rate (%)", fontsize=12)
     ax1.set_xticks(x_pos)
     ax1.set_xticklabels(sim_labels, rotation=15, ha="right")

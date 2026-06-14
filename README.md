@@ -82,8 +82,6 @@ revision_package/
 - run_empirical4_and_5.py          # Entry point: Python workflow (Sections 4.1-4.4 and 5)
 - install.R                        # Installs R packages at pinned versions
 - requirements.txt                 # Python packages at pinned versions
-- redraw_figure_g3.py              # Utility: regenerate Figure G.3 from saved data
-- redraw_figure_g7.py              # Utility: regenerate Figure G.7 from saved data
 - archive/historical_sources/      # Original ad hoc scripts (not part of workflow)
 ```
 
@@ -170,14 +168,6 @@ python run_empirical4_and_5.py --weighted
 Adds Figures G.3-G.6 to `results/empirical4.1_4.4_weighted/` and Figure G.7
 to `results/empirical5_weighted/`. Uses 20 Optuna trials per weighted
 classifier and 20 per weighted WTA regressor by default.
-
-If needed, Figures G.3 and G.7 can be regenerated from the saved CSV data
-without re-running the full analysis:
-
-```powershell
-python redraw_figure_g3.py
-python redraw_figure_g7.py
-```
 
 ### Optional: legacy WTA hyperparameters
 
