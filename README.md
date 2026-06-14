@@ -1,4 +1,4 @@
-# Replication Kit: IJF-D-25-00886R1
+﻿# Replication Kit: IJF-D-25-00886R1
 
 Yuanyuan Tang (School of Applied Economics, Renmin University of China)
 
@@ -9,15 +9,15 @@ empirical sections of the paper "Designing Cost-effective Climate Policies
 through Preference Prediction: Evidence from Chinese Households'
 Low-carbon Alternatives." The analysis combines R (Section 3:
 ordered logit models, robustness checks, and post-stratification weighting)
-and Python (Sections 4.1–4.5: machine-learning prediction, assignment
+and Python (Sections 4.1鈥?.5: machine-learning prediction, assignment
 optimisation, and knowledge-growth simulation).
 
-The kit generates **12 figures** and **19 tables** across Sections 3–4.5
-and Appendices B–G.
+The kit generates **12 figures** and **19 tables** across Sections 3鈥?.5
+and Appendices B鈥揋.
 
 ### Generated outputs
 
-**Section 3 — Ordered logit models** (written to `results/empirical3/`)
+**Section 3 鈥?Ordered logit models** (written to `results/empirical3/`)
 
 | Output                                          | File name                                             |
 | ----------------------------------------------- | ----------------------------------------------------- |
@@ -37,7 +37,7 @@ and Appendices B–G.
 | Appendix G: weighted results, home energy       | `Table_G.13_weighted_home_energy.csv/.tex`          |
 | Appendix G: weighted results, green electricity | `Table_G.14_weighted_green_electricity.csv/.tex`    |
 
-**Sections 4.2–4.4 — Machine-learning prediction and assignment** (written to `results/empirical4.1_4.4/`)
+**Sections 4.2鈥?.4 鈥?Machine-learning prediction and assignment** (written to `results/empirical4.1_4.4/`)
 
 | Output                              | File name                                      |
 | ----------------------------------- | ---------------------------------------------- |
@@ -51,14 +51,14 @@ and Appendices B–G.
 | Appendix D: quota accept cost       | `Table_D.4_quota_accept_cost.csv/.tex`       |
 | Appendix D: budget participation    | `Table_D.5_budget_participation.csv/.tex`    |
 
-**Section 4.5 — Knowledge-growth simulation** (written to `results/empirical4.5/`)
+**Section 5 鈥?Knowledge-growth simulation** (written to `results/empirical5/`)
 
 | Output                                  | File name                                 |
 | --------------------------------------- | ----------------------------------------- |
 | Figure 7: knowledge-growth trajectories | `Figure_7_knowledge_growth.png`         |
 | Summary statistics                      | `Figure_7_knowledge_growth_summary.csv` |
 
-**Appendix G — Post-stratification weighted ML analysis** (written to `results/empirical4.1_4.4_weighted/` and `results/empirical4.5_weighted/`)
+**Appendix G 鈥?Post-stratification weighted ML analysis** (written to `results/empirical4.1_4.4_weighted/` and `results/empirical5_weighted/`)
 
 | Output                                    | File name                               |
 | ----------------------------------------- | --------------------------------------- |
@@ -72,19 +72,19 @@ and Appendices B–G.
 
 ```
 revision_package/
-├── data/
-│   ├── raw/energy_wta.csv          # Survey data (1,487 Chinese households)
-│   └── temp/                        # Generated intermediate files
-├── R/                               # Modular R scripts for Section 4.1
-├── python/empirical_4_1_4_5/        # Python package for Sections 4.2–4.5
-├── results/                         # All outputs (created automatically)
-├── run_all.R                        # Entry point: R workflow (Section 4.1)
-├── run_empirical4_1_and_4_5.py      # Entry point: Python workflow (Sections 4.2–4.5)
-├── install.R                        # Installs R packages at pinned versions
-├── requirements.txt                 # Python packages at pinned versions
-├── redraw_figure_g3.py              # Utility: regenerate Figure G.3 from saved data
-├── redraw_figure_g7.py              # Utility: regenerate Figure G.7 from saved data
-└── archive/historical_sources/      # Original ad hoc scripts (not part of workflow)
+鈹溾攢鈹€ data/
+鈹?  鈹溾攢鈹€ raw/energy_wta.csv          # Survey data (1,487 Chinese households)
+鈹?  鈹斺攢鈹€ temp/                        # Generated intermediate files
+鈹溾攢鈹€ R/                               # Modular R scripts for Section 4.1
+鈹溾攢鈹€ python/empirical_4_1_5/        # Python package for Sections 4.2鈥?.5
+鈹溾攢鈹€ results/                         # All outputs (created automatically)
+鈹溾攢鈹€ run_all.R                        # Entry point: R workflow (Section 4.1)
+鈹溾攢鈹€ run_empirical4_1_and_5.py      # Entry point: Python workflow (Sections 4.2鈥?.5)
+鈹溾攢鈹€ install.R                        # Installs R packages at pinned versions
+鈹溾攢鈹€ requirements.txt                 # Python packages at pinned versions
+鈹溾攢鈹€ redraw_figure_g3.py              # Utility: regenerate Figure G.3 from saved data
+鈹溾攢鈹€ redraw_figure_g7.py              # Utility: regenerate Figure G.7 from saved data
+鈹斺攢鈹€ archive/historical_sources/      # Original ad hoc scripts (not part of workflow)
 ```
 
 ## Instructions and computational requirements
@@ -94,7 +94,7 @@ revision_package/
 - **R 4.5.2**
 - **Python 3.10.0**
 
-### Step 1 — Install R packages
+### Step 1 鈥?Install R packages
 
 ```powershell
 Rscript install.R
@@ -104,7 +104,7 @@ Installs 5 direct packages and 32 transitive dependencies at the exact
 versions used by the author, using `remotes::install_version()`. This is the
 recommended path for exact reproducibility.
 
-If a package fails at the pinned version, omit the version constraint — the
+If a package fails at the pinned version, omit the version constraint 鈥?the
 latest CRAN release is typically compatible.
 
 Direct dependencies: `MASS` (7.3-65), `dplyr` (1.2.0), `brant` (0.3-0),
@@ -115,7 +115,7 @@ Direct dependencies: `MASS` (7.3-65), `dplyr` (1.2.0), `brant` (0.3-0),
 > use the latest available versions rather than the pinned ones, so exact
 > version matching is not guaranteed.
 
-### Step 2 — Install Python packages
+### Step 2 鈥?Install Python packages
 
 ```powershell
 pip install -r requirements.txt
@@ -126,7 +126,7 @@ Installs 6 direct packages and 16 transitive dependencies at tested versions.
 Direct dependencies: `pandas` (2.0.0), `numpy` (1.23.5), `scikit-learn`
 (1.6.1), `xgboost` (3.1.2), `optuna` (4.7.0), `matplotlib` (3.8.2).
 
-### Step 3 — Run the R workflow (Section 4.1)
+### Step 3 鈥?Run the R workflow (Section 4.1)
 
 From the project root:
 
@@ -142,20 +142,20 @@ source("run_all.R", encoding = "UTF-8")
 
 This reproduces Section 4.1 (ordered logit models, robustness checks,
 post-stratification weighted tables) and writes all Section 4.1 and
-Appendix B–G table outputs to `results/empirical3/`. It also generates
+Appendix B鈥揋 table outputs to `results/empirical3/`. It also generates
 `data/temp/energy_wta_with_post_weights.csv`, which Step 4 requires.
 
-### Step 4 — Run the Python workflow (Sections 4.1–4.5)
+### Step 4 鈥?Run the Python workflow (Sections 4.1鈥?.5)
 
 ```powershell
-python run_empirical4_1_and_4_5.py
+python run_empirical4_1_and_5.py
 ```
 
 **Step 3 must complete before Step 4.**
 
-Reproduces Sections 4.2–4.4 (ML prediction, assignment optimisation) and
-Section 4.5 (knowledge-growth simulation). Main outputs go to
-`results/empirical4.1_4.4/`; simulation outputs go to `results/empirical4.5/`.
+Reproduces Sections 4.2鈥?.4 (ML prediction, assignment optimisation) and
+Section 5 (knowledge-growth simulation). Main outputs go to
+`results/empirical4.1_4.4/`; simulation outputs go to `results/empirical5/`.
 
 Default settings: 50 Optuna trials per XGBoost classifier, 100 Optuna trials
 per WTA regressor, 3-fold cross-validation, 1,000 Monte Carlo draws for the
@@ -164,11 +164,11 @@ random baseline, 200 knowledge-growth simulation iterations.
 ### Optional: Appendix G weighted ML analysis
 
 ```powershell
-python run_empirical4_1_and_4_5.py --weighted
+python run_empirical4_1_and_5.py --weighted
 ```
 
-Adds Figures G.3–G.6 to `results/empirical4.1_4.4_weighted/` and Figure G.7
-to `results/empirical4.5_weighted/`. Uses 20 Optuna trials per weighted
+Adds Figures G.3鈥揋.6 to `results/empirical4.1_4.4_weighted/` and Figure G.7
+to `results/empirical5_weighted/`. Uses 20 Optuna trials per weighted
 classifier and 20 per weighted WTA regressor by default.
 
 If needed, Figures G.3 and G.7 can be regenerated from the saved CSV data
@@ -185,13 +185,13 @@ To fix only the WTA regressors to the values reported in Table C.1 of the
 manuscript (keeping the PrefAlt classifiers on the standard Optuna workflow):
 
 ```powershell
-python run_empirical4_1_and_4_5.py --use-legacy-wta-params --output-subdir "empirical4.1_4.4_legacy_wta" --skip-simulation
+python run_empirical4_1_and_5.py --use-legacy-wta-params --output-subdir "empirical4.1_4.4_legacy_wta" --skip-simulation
 ```
 
 ### Smoke test (fast verification)
 
 ```powershell
-python run_empirical4_1_and_4_5.py --n-trials 1 --reg-n-trials 1 --cv 2 --random-iterations 5
+python run_empirical4_1_and_5.py --n-trials 1 --reg-n-trials 1 --cv 2 --random-iterations 5
 ```
 
 ## Environment notes
@@ -210,7 +210,7 @@ Rscript run_all.R
 If `Rscript` is not on `PATH`, pass it explicitly:
 
 ```powershell
-python run_empirical4_1_and_4_5.py --rscript "C:\path\to\R\bin\Rscript.exe"
+python run_empirical4_1_and_5.py --rscript "C:\path\to\R\bin\Rscript.exe"
 ```
 
 After the R run, `results/empirical3/logs/session_info.txt` records the exact
@@ -224,3 +224,4 @@ The analysis data are in `data/raw/energy_wta.csv` (1,487 Chinese household
 survey responses) and are included in this package. No additional data
 download is required. Column names are trimmed on load; this corrects a
 trailing space in the original `MADT ` column.
+

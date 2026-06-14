@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import copy
 import time
@@ -83,7 +83,7 @@ def main() -> None:
         legacy_args.skip_main = False
         legacy_args.output_subdir = args.output_subdir + "_legacy_wta"
         legacy_args.sim_output_subdir = (
-            args.sim_output_subdir or "empirical4.5"
+            args.sim_output_subdir or "empirical5"
         ) + "_legacy_wta"
         print(f"\n{'='*60}")
         print("Re-running analysis with legacy WTA hyperparameters...")
@@ -98,13 +98,13 @@ def _run(args, root: Path) -> None:
     temp_root.mkdir(parents=True, exist_ok=True)
     temp_dir = temp_root / args.output_subdir
     temp_dir.mkdir(parents=True, exist_ok=True)
-    sim_output_subdir = args.sim_output_subdir or "empirical4.5"
+    sim_output_subdir = args.sim_output_subdir or "empirical5"
     use_legacy_wta = args.use_legacy_wta_params
 
     # Use the post-weights file because it is the most complete intermediate dataset
     # (contains all R-derived variables). The 'weights' column it carries is excluded
-    # from every feature set in data.py and is never passed to any model fitter —
-    # Sections 4.1–4.4 are unweighted main-text analyses; weighting is Appendix G only.
+    # from every feature set in data.py and is never passed to any model fitter 鈥?
+    # Sections 4.1鈥?.4 are unweighted main-text analyses; weighting is Appendix G only.
     input_file = temp_root / "energy_wta_with_post_weights.csv"
     if not input_file.exists():
         raise FileNotFoundError(
@@ -120,7 +120,7 @@ def _run(args, root: Path) -> None:
     print(f"  XGBoost training : ~{_fmt(est_clf + est_reg)}")
     print(f"  R models         : ~{_fmt(est_r)}")
     if not args.skip_simulation:
-        print(f"  Section 4.5 sim  : ~{_fmt(est_sim)}")
+        print(f"  Section 5 sim  : ~{_fmt(est_sim)}")
     print(f"  Total            : ~{_fmt(est_total)}")
     print("  (Actual time varies by hardware. Use --skip-simulation to stop after Step 6.)\n")
 
@@ -233,7 +233,7 @@ def _run(args, root: Path) -> None:
         final_df_random = run_monte_carlo_random(test_encoded, n_iterations=args.random_iterations)
         print(f"  Done ({_fmt(time.perf_counter() - _t)})")
 
-        print("\n[Step 6/7] Generating Sections 4.1–4.4 figures and tables...")
+        print("\n[Step 6/7] Generating Sections 4.1鈥?.4 figures and tables...")
         _t6 = time.perf_counter()
 
         accuracy_data = {
@@ -347,7 +347,7 @@ def _run(args, root: Path) -> None:
         )
         ax1.set_ylim(df_plot["Cost"].min() - 2, df_plot["Cost"].max() + 2)
         ax2.set_ylim(df_plot["Rate"].min() - 2, 100)
-        ax1.set_ylabel("Average Compensation (¥)", fontsize=12)
+        ax1.set_ylabel("Average Compensation (楼)", fontsize=12)
         ax2.set_ylabel("Acceptance Rate (%)", fontsize=12)
         ax1.set_xticks(x_pos)
         ax1.set_xticklabels(labels, rotation=25, ha="right")
@@ -494,7 +494,7 @@ def _run(args, root: Path) -> None:
         fig.text(
             0.04,
             0.5,
-            "Compensation Spending (¥/month/household)",
+            "Compensation Spending (楼/month/household)",
             va="center",
             rotation="vertical",
             fontsize=12,
@@ -590,7 +590,7 @@ def _run(args, root: Path) -> None:
                     linewidth=1.8,
                     markersize=8,
                 )
-        ax.set_xlabel("Mitigation Budget (¥/month)", fontsize=12)
+        ax.set_xlabel("Mitigation Budget (楼/month)", fontsize=12)
         ax.set_ylabel("Number of Participating Households", fontsize=12)
         ax.set_xticks(current_budgets)
         ax.set_xlim(min(current_budgets) - 200, max(current_budgets) + 200)
@@ -612,7 +612,7 @@ def _run(args, root: Path) -> None:
         current_n_list = [55, 100, 145]
         current_budgets = [1000, 2000, 3000, 4000]
 
-    # ── Weighted Sections 4.1–4.4 analysis ────────────────────────────────────
+    # 鈹€鈹€ Weighted Sections 4.1鈥?.4 analysis 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
     if args.weighted:
         _wN = 4 if args.skip_simulation else 6
         w_subdir = args.weighted_output_subdir
@@ -680,10 +680,10 @@ def _run(args, root: Path) -> None:
         w_reco_d = update_eco_results_with_floor(w_reco_d, w_temp_dir / "wta_preds_demos.csv")
         print(f"Done ({_fmt(time.perf_counter() - _t)})")
 
-        print(f"[Weighted 4/{_wN}] Generating weighted Sections 4.1–4.4 figures (G.3–G.6)...", end="  ", flush=True)
+        print(f"[Weighted 4/{_wN}] Generating weighted Sections 4.1鈥?.4 figures (G.3鈥揋.6)...", end="  ", flush=True)
         _t = time.perf_counter()
 
-        # G.3 — prediction accuracy
+        # G.3 鈥?prediction accuracy
         w_acc = pd.Series({
             "Logistic regression I":  clean_pct(w_feco.loc["Demos", "Perfect_Rate"]) * 100,
             "Logistic regression II": clean_pct(w_feco.loc["All",   "Perfect_Rate"]) * 100,
@@ -710,7 +710,7 @@ def _run(args, root: Path) -> None:
         fig.savefig(w_output_dir / "Figure_G.3_prediction_accuracy.png", bbox_inches="tight", dpi=300)
         plt.close(fig)
 
-        # G.4 — assignment outcomes (also defines w_df_plot for G.7 baseline)
+        # G.4 鈥?assignment outcomes (also defines w_df_plot for G.7 baseline)
         _wkeys = ["Random", "Logit_All", "Logit_Demos", "XGB_All", "XGB_Demos", "Ideal"]
         _wlbls = ["Random assignment", "Logistic regression II", "Logistic regression I",
                   "XGBoost algorithm II", "XGBoost algorithm I", "Perfect assignment"]
@@ -731,7 +731,7 @@ def _run(args, root: Path) -> None:
         ax2.plot(xp + xoff, w_df_plot["Rate"], color="#7f7f7f", marker="o", linestyle="--", linewidth=2, markersize=8, label="Acceptance Rate", zorder=5)
         ax1.set_ylim(w_df_plot["Cost"].min() - 2, w_df_plot["Cost"].max() + 2)
         ax2.set_ylim(w_df_plot["Rate"].min() - 2, 100)
-        ax1.set_ylabel("Average Compensation (¥)", fontsize=12)
+        ax1.set_ylabel("Average Compensation (楼)", fontsize=12)
         ax2.set_ylabel("Acceptance Rate (%)", fontsize=12)
         ax1.set_xticks(xp); ax1.set_xticklabels(_wlbls, rotation=25, ha="right")
         ax1.spines["top"].set_visible(False); ax1.spines["right"].set_visible(False)
@@ -749,7 +749,7 @@ def _run(args, root: Path) -> None:
         fig.savefig(w_output_dir / "Figure_G.4_assignment_outcomes.png", bbox_inches="tight", dpi=300)
         plt.close(fig)
 
-        # G.5 — quota compensation
+        # G.5 鈥?quota compensation
         wm_id = get_n_household_metrics(results_ideal,  test_encoded, n_list=current_n_list)
         wm_xa = get_n_household_metrics(w_rxgb_a, test_encoded, n_list=current_n_list)
         wm_xd = get_n_household_metrics(w_rxgb_d, test_encoded, n_list=current_n_list)
@@ -784,13 +784,13 @@ def _run(args, root: Path) -> None:
         d = 0.015
         atop.plot((-d, +d), (-d, +d), transform=atop.transAxes, color="black", clip_on=False)
         abot.plot((-d, +d), (1 - d, 1 + d), transform=abot.transAxes, color="black", clip_on=False)
-        fig.text(0.04, 0.5, "Compensation Spending (¥/month/household)", va="center", rotation="vertical", fontsize=12)
+        fig.text(0.04, 0.5, "Compensation Spending (楼/month/household)", va="center", rotation="vertical", fontsize=12)
         abot.set_xlabel("Targeted Numbers of Households", fontsize=12); abot.set_xticks(wqn)
         atop.legend(loc="center left", bbox_to_anchor=(1.05, 0.3), frameon=False, fontsize=11)
         fig.savefig(w_output_dir / "Figure_G.5_quota_compensation.png", bbox_inches="tight", dpi=300)
         plt.close(fig)
 
-        # G.6 — budget participation
+        # G.6 鈥?budget participation
         wb_id = get_budget_metrics(results_ideal, test_encoded, budget_list=current_budgets)
         wb_xa = get_budget_metrics(w_rxgb_a, test_encoded, budget_list=current_budgets)
         wb_xd = get_budget_metrics(w_rxgb_d, test_encoded, budget_list=current_budgets)
@@ -816,7 +816,7 @@ def _run(args, root: Path) -> None:
             if gn in wb_pdf.index:
                 ax.plot(current_budgets, wb_pdf.loc[gn].values, color=st["color"], linestyle=st["linestyle"],
                         marker=st["marker"], label=f"{st['label_base']} ({wb_avg.loc[gn]:.2%})", linewidth=1.8, markersize=8)
-        ax.set_xlabel("Mitigation Budget (¥/month)", fontsize=12); ax.set_ylabel("Number of Participating Households", fontsize=12)
+        ax.set_xlabel("Mitigation Budget (楼/month)", fontsize=12); ax.set_ylabel("Number of Participating Households", fontsize=12)
         ax.set_xticks(current_budgets); ax.set_xlim(min(current_budgets) - 200, max(current_budgets) + 200)
         ax.spines["top"].set_visible(False); ax.spines["right"].set_visible(False)
         ax.set_ylim(wb_pdf.min().min() - 5, wb_pdf.max().max() + 5)
@@ -826,11 +826,11 @@ def _run(args, root: Path) -> None:
         plt.close(fig)
 
         print(f"Done ({_fmt(time.perf_counter() - _t)})")
-        print(f"  Weighted Sections 4.1–4.4 results saved to {w_output_dir}")
+        print(f"  Weighted Sections 4.1鈥?.4 results saved to {w_output_dir}")
 
     test_base = test_raw.copy().reset_index(drop=True)
 
-    # ── Weighted Section 4.5 simulation ──────────────────────────────────────
+    # 鈹€鈹€ Weighted Section 5 simulation 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
     if args.weighted and not args.skip_simulation:
         w_sim_dir = root / "results" / w_sim_subdir
         w_sim_dir.mkdir(parents=True, exist_ok=True)
@@ -841,7 +841,7 @@ def _run(args, root: Path) -> None:
             "xgb_demos_sm": {}, "eco_all_sm": {}, "eco_demos_sm": {},
         }
         _wt_total = args.simulation_iterations
-        print(f"\n[Weighted 5/6] Weighted Section 4.5 simulation ({_wt_total} iterations)...")
+        print(f"\n[Weighted 5/6] Weighted Section 5 simulation ({_wt_total} iterations)...")
         _tw7 = time.perf_counter()
         for i in range(_wt_total):
             _we = time.perf_counter() - _tw7
@@ -878,7 +878,7 @@ def _run(args, root: Path) -> None:
         w_sim_summary = summarize_simulation_results(w_simulate_results)
         w_sim_summary.to_csv(w_sim_dir / "Figure_G.7_knowledge_growth_summary.csv", encoding="utf-8-sig")
 
-        print(f"[Weighted 6/6] Generating weighted Section 4.5 figure (G.7)...", end="  ", flush=True)
+        print(f"[Weighted 6/6] Generating weighted Section 5 figure (G.7)...", end="  ", flush=True)
         _t = time.perf_counter()
         w_sim_order = [
             ("random_sm", "Random assignment"), ("eco_all_sm", "Logistic regression II"),
@@ -912,7 +912,7 @@ def _run(args, root: Path) -> None:
         _w_ymax = max(w_bl_cost.max(), w_cf_cost.max()) + 2
         ax1.set_ylim(17.5, _w_ymax)
         ax1.set_yticks(np.arange(17.5, _w_ymax, 2.5))
-        ax1.set_ylabel("Average Compensation (¥)", fontsize=12)
+        ax1.set_ylabel("Average Compensation (楼)", fontsize=12)
         ax2.set_ylabel("Acceptance Rate (%)", fontsize=12)
         ax1.set_xticks(xp); ax1.set_xticklabels(w_sim_labels, rotation=15, ha="right")
         ax1.spines["top"].set_visible(False); ax2.spines["top"].set_visible(False)
@@ -922,7 +922,7 @@ def _run(args, root: Path) -> None:
         fig.savefig(w_sim_dir / "Figure_G.7_knowledge_growth.png", bbox_inches="tight", dpi=300)
         plt.close(fig)
         print(f"Done ({_fmt(time.perf_counter() - _t)})")
-        print(f"  Weighted Section 4.5 results saved to {w_sim_dir}")
+        print(f"  Weighted Section 5 results saved to {w_sim_dir}")
 
     if args.skip_simulation or _skip_main:
         print(f"\nAll done! Results saved to {output_dir} (total time: {_fmt(time.perf_counter() - t_total)})")
@@ -942,7 +942,7 @@ def _run(args, root: Path) -> None:
     }
 
     _total_iters = args.simulation_iterations
-    print(f"\n[Step 7/7] Section 4.5 knowledge-growth simulation ({_total_iters} iterations)...")
+    print(f"\n[Step 7/7] Section 5 knowledge-growth simulation ({_total_iters} iterations)...")
     _t7 = time.perf_counter()
     for i in range(_total_iters):
         _elapsed = time.perf_counter() - _t7
@@ -1062,7 +1062,7 @@ def _run(args, root: Path) -> None:
     _ymax = max(baseline_cost.max(), cf_cost.max()) + 2
     ax1.set_ylim(17.5, _ymax)
     ax1.set_yticks(np.arange(17.5, _ymax, 2.5))
-    ax1.set_ylabel("Average Compensation (¥)", fontsize=12)
+    ax1.set_ylabel("Average Compensation (楼)", fontsize=12)
     ax2.set_ylabel("Acceptance Rate (%)", fontsize=12)
     ax1.set_xticks(x_pos)
     ax1.set_xticklabels(sim_labels, rotation=15, ha="right")
@@ -1082,4 +1082,5 @@ def _run(args, root: Path) -> None:
     fig.savefig(sim_dir / "Figure_7_knowledge_growth.png", bbox_inches="tight", dpi=300)
     plt.close(fig)
 
-    print(f"\nAll done! Sections 4.1–4.4: {output_dir}  /  Section 4.5: {sim_dir}  (total time: {_fmt(time.perf_counter() - t_total)})")
+    print(f"\nAll done! Sections 4.1鈥?.4: {output_dir}  /  Section 5: {sim_dir}  (total time: {_fmt(time.perf_counter() - t_total)})")
+

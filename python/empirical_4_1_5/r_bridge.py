@@ -36,7 +36,7 @@ def run_r_simulated_predictions(
     train_subdir: str,
     sim_subdir: str,
 ) -> None:
-    script = root / "R" / "09_simulated_predictions_4_5.R"
+    script = root / "R" / "09_simulated_predictions_5.R"
     _run([str(rscript), str(script), str(root), train_subdir, sim_subdir])
 
 
@@ -56,6 +56,6 @@ def run_r_simulated_predictions_weighted(
     train_subdir: str,
     sim_subdir: str,
 ) -> None:
-    script = root / "R" / "09_simulated_predictions_4_5_weighted.R"
+    script = root / "R" / "09_simulated_predictions_5_weighted.R"
     _run([str(rscript), str(script), str(root), train_subdir, sim_subdir])
 

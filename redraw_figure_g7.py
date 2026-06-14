@@ -6,7 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 root = Path(__file__).resolve().parent
-w_sim_dir    = root / "results" / "empirical4.5_weighted"
+w_sim_dir    = root / "results" / "empirical5_weighted"
 w_output_dir = root / "results" / "empirical4.1_4.4_weighted"
 
 w_sim_summary = pd.read_csv(w_sim_dir / "Figure_G.7_knowledge_growth_summary.csv", index_col=0)

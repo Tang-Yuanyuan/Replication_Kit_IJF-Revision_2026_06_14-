@@ -11,7 +11,7 @@ def _find_rscript() -> Path | None:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Reproduce empirical Sections 4.1–4.5.")
+    parser = argparse.ArgumentParser(description="Reproduce empirical Sections 4.1–4.4 and 5.")
     parser.add_argument(
         "--root",
         type=Path,
@@ -46,7 +46,7 @@ def parse_args() -> argparse.Namespace:
         "--simulation-iterations",
         type=int,
         default=200,
-        help="Knowledge-growth simulation iterations for Section 4.5.",
+        help="Knowledge-growth simulation iterations for Section 5.",
     )
     parser.add_argument(
         "--output-subdir",
@@ -56,7 +56,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--sim-output-subdir",
         default=None,
-        help="Subdirectory under results/ for Section 4.5 outputs. Defaults to empirical4.5.",
+        help="Subdirectory under results/ for Section 5 outputs. Defaults to empirical5.",
     )
     parser.add_argument(
         "--use-legacy-wta-params",
@@ -80,12 +80,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--skip-simulation",
         action="store_true",
-        help="Skip the Section 4.5 knowledge-growth simulation.",
+        help="Skip the Section 5 knowledge-growth simulation.",
     )
     parser.add_argument(
         "--weighted",
         action="store_true",
-        help="Also run post-stratification weighted analysis (Sections 4.1–4.5, Appendix G).",
+        help="Also run post-stratification weighted analysis (Sections 4.1–4.4 and 5, Appendix G).",
     )
     parser.add_argument(
         "--weighted-n-trials",
