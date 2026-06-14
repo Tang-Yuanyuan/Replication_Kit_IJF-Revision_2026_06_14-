@@ -151,7 +151,7 @@ python run_empirical4_and_5.py
 
 **Step 3 must complete before Step 4.**
 
-Reproduces Sections 4.2-4.4 (ML prediction, assignment optimisation) and
+Reproduces Sections 4.1-4.4 (ML prediction, assignment optimisation) and
 Section 5 (knowledge-growth simulation). Main outputs go to
 `results/empirical4.1_4.4/`; simulation outputs go to `results/empirical5/`.
 
@@ -171,7 +171,7 @@ classifier and 20 per weighted WTA regressor by default.
 
 ### Optional: legacy WTA hyperparameters
 
-To fix only the WTA regressors to the values reported in Table C.1 of the
+Try to fix only the WTA regressors to the values reported in Table C.1 of the
 manuscript (keeping the PrefAlt classifiers on the standard Optuna workflow):
 
 ```powershell

@@ -103,8 +103,8 @@ def _run(args, root: Path) -> None:
 
     # Use the post-weights file because it is the most complete intermediate dataset
     # (contains all R-derived variables). The 'weights' column it carries is excluded
-    # from every feature set in data.py and is never passed to any model fitter 鈥?
-    # Sections 4.1鈥?.4 are unweighted main-text analyses; weighting is Appendix G only.
+    # from every feature set in data.py and is never passed to any model fitter –
+    # Sections 4.1–4.4 are unweighted main-text analyses; weighting is Appendix G only.
     input_file = temp_root / "energy_wta_with_post_weights.csv"
     if not input_file.exists():
         raise FileNotFoundError(
@@ -233,7 +233,7 @@ def _run(args, root: Path) -> None:
         final_df_random = run_monte_carlo_random(test_encoded, n_iterations=args.random_iterations)
         print(f"  Done ({_fmt(time.perf_counter() - _t)})")
 
-        print("\n[Step 6/7] Generating Sections 4.1鈥?.4 figures and tables...")
+        print("\n[Step 6/7] Generating Sections 4.1–4.4 figures and tables...")
         _t6 = time.perf_counter()
 
         accuracy_data = {
@@ -612,7 +612,7 @@ def _run(args, root: Path) -> None:
         current_n_list = [55, 100, 145]
         current_budgets = [1000, 2000, 3000, 4000]
 
-    # 鈹€鈹€ Weighted Sections 4.1鈥?.4 analysis 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    # ── Weighted Sections 4.1–4.4 analysis ────────────────────────────────────
     if args.weighted:
         _wN = 4 if args.skip_simulation else 6
         w_subdir = args.weighted_output_subdir
@@ -680,10 +680,10 @@ def _run(args, root: Path) -> None:
         w_reco_d = update_eco_results_with_floor(w_reco_d, w_temp_dir / "wta_preds_demos.csv")
         print(f"Done ({_fmt(time.perf_counter() - _t)})")
 
-        print(f"[Weighted 4/{_wN}] Generating weighted Sections 4.1鈥?.4 figures (G.3鈥揋.6)...", end="  ", flush=True)
+        print(f"[Weighted 4/{_wN}] Generating weighted Sections 4.1–4.4 figures (G.3–G.6)...", end="  ", flush=True)
         _t = time.perf_counter()
 
-        # G.3 鈥?prediction accuracy
+        # G.3 – prediction accuracy
         w_acc = pd.Series({
             "Logistic regression I":  clean_pct(w_feco.loc["Demos", "Perfect_Rate"]) * 100,
             "Logistic regression II": clean_pct(w_feco.loc["All",   "Perfect_Rate"]) * 100,
@@ -710,7 +710,7 @@ def _run(args, root: Path) -> None:
         fig.savefig(w_output_dir / "Figure_G.3_prediction_accuracy.png", bbox_inches="tight", dpi=300)
         plt.close(fig)
 
-        # G.4 鈥?assignment outcomes (also defines w_df_plot for G.7 baseline)
+        # G.4 – assignment outcomes (also defines w_df_plot for G.7 baseline)
         _wkeys = ["Random", "Logit_All", "Logit_Demos", "XGB_All", "XGB_Demos", "Ideal"]
         _wlbls = ["Random assignment", "Logistic regression II", "Logistic regression I",
                   "XGBoost algorithm II", "XGBoost algorithm I", "Perfect assignment"]
@@ -749,7 +749,7 @@ def _run(args, root: Path) -> None:
         fig.savefig(w_output_dir / "Figure_G.4_assignment_outcomes.png", bbox_inches="tight", dpi=300)
         plt.close(fig)
 
-        # G.5 鈥?quota compensation
+        # G.5 – quota compensation
         wm_id = get_n_household_metrics(results_ideal,  test_encoded, n_list=current_n_list)
         wm_xa = get_n_household_metrics(w_rxgb_a, test_encoded, n_list=current_n_list)
         wm_xd = get_n_household_metrics(w_rxgb_d, test_encoded, n_list=current_n_list)
@@ -790,7 +790,7 @@ def _run(args, root: Path) -> None:
         fig.savefig(w_output_dir / "Figure_G.5_quota_compensation.png", bbox_inches="tight", dpi=300)
         plt.close(fig)
 
-        # G.6 鈥?budget participation
+        # G.6 – budget participation
         wb_id = get_budget_metrics(results_ideal, test_encoded, budget_list=current_budgets)
         wb_xa = get_budget_metrics(w_rxgb_a, test_encoded, budget_list=current_budgets)
         wb_xd = get_budget_metrics(w_rxgb_d, test_encoded, budget_list=current_budgets)
@@ -826,11 +826,11 @@ def _run(args, root: Path) -> None:
         plt.close(fig)
 
         print(f"Done ({_fmt(time.perf_counter() - _t)})")
-        print(f"  Weighted Sections 4.1鈥?.4 results saved to {w_output_dir}")
+        print(f"  Weighted Sections 4.1–4.4 results saved to {w_output_dir}")
 
     test_base = test_raw.copy().reset_index(drop=True)
 
-    # 鈹€鈹€ Weighted Section 5 simulation 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    # ── Weighted Section 5 simulation ──────────────────────────────────────
     if args.weighted and not args.skip_simulation:
         w_sim_dir = root / "results" / w_sim_subdir
         w_sim_dir.mkdir(parents=True, exist_ok=True)
@@ -1082,5 +1082,5 @@ def _run(args, root: Path) -> None:
     fig.savefig(sim_dir / "Figure_7_knowledge_growth.png", bbox_inches="tight", dpi=300)
     plt.close(fig)
 
-    print(f"\nAll done! Sections 4.1鈥?.4: {output_dir}  /  Section 5: {sim_dir}  (total time: {_fmt(time.perf_counter() - t_total)})")
+    print(f"\nAll done! Sections 4.1–4.4: {output_dir}  /  Section 5: {sim_dir}  (total time: {_fmt(time.perf_counter() - t_total)})")
 
