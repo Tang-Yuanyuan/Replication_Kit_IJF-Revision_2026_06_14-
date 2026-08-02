@@ -369,8 +369,12 @@ build_combined_model_table <- function(model_sets, set_labels, keep = NULL, omit
 
   table <- data.frame(Variable = display_terms, stringsAsFactors = FALSE)
 
-  for (set_i in seq_along(tidy_sets)) {
-    for (model_i in seq_along(tidy_sets[[set_i]])) {
+  # Dimension-major column order (GW, LC, Neu, Pol), each split into the
+  # robustness variants in set_labels order -- matches the manuscript's
+  # column grouping (knowledge dimension outer, robustness check inner).
+  n_models <- length(tidy_sets[[1]])
+  for (model_i in seq_len(n_models)) {
+    for (set_i in seq_along(tidy_sets)) {
       res <- tidy_sets[[set_i]][[model_i]]
       values <- character(length(display_terms))
       for (row_i in seq_along(display_terms)) {
@@ -387,8 +391,10 @@ build_combined_model_table <- function(model_sets, set_labels, keep = NULL, omit
 
   add_ic_row <- function(label, fun) {
     values <- c(label)
-    for (model_set in model_sets) {
-      values <- c(values, round(vapply(model_set, fun, numeric(1)), 2))
+    for (model_i in seq_len(n_models)) {
+      for (set_i in seq_along(model_sets)) {
+        values <- c(values, round(fun(model_sets[[set_i]][[model_i]]), 2))
+      }
     }
     row <- as.data.frame(as.list(values), stringsAsFactors = FALSE)
     names(row) <- names(table)
@@ -397,8 +403,10 @@ build_combined_model_table <- function(model_sets, set_labels, keep = NULL, omit
 
   add_n_row <- function() {
     values <- c("N")
-    for (model_set in model_sets) {
-      values <- c(values, vapply(model_set, function(m) nrow(m$fitted.values), integer(1)))
+    for (model_i in seq_len(n_models)) {
+      for (set_i in seq_along(model_sets)) {
+        values <- c(values, nrow(model_sets[[set_i]][[model_i]]$fitted.values))
+      }
     }
     row <- as.data.frame(as.list(values), stringsAsFactors = FALSE)
     names(row) <- names(table)

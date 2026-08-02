@@ -142,16 +142,6 @@ def train_xgb_regressor_bayesian(
     model.fit(train_x, train_y, **fit_kwargs)
     return model
 
-def train_xgb_regressor_fixed(
-    train_x: pd.DataFrame,
-    train_y: pd.Series,
-    params: dict[str, float | int],
-) -> xgb.XGBRegressor:
-    final_params = {**params, "random_state": RANDOM_SEED}
-    model = xgb.XGBRegressor(**final_params)
-    model.fit(train_x, train_y)
-    return model
-
 def get_group_probabilities(
     model_dict: dict[str, xgb.XGBClassifier],
     test_df: pd.DataFrame,

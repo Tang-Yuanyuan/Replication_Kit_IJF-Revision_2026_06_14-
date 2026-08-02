@@ -22,21 +22,33 @@ run_robustness_checks <- function(prepared) {
   )
 
   export_combined_model_table(
-    model_sets = list(robust$car_madt, robust$car_carown, robust$car_city),
-    set_labels = c("MADT", "Car ownership", "City controls"),
+    model_sets = list(robust$car_carown, robust$car_madt, robust$car_city),
+    set_labels = c("Car ownership", "MADT", "City controls"),
     file = file.path(paths$tables, "Table_F.7_transport_robustness.tex"),
+    keep = c(
+      "^location", "^heard_about_global_warming", "^know_about_low_carbon",
+      "^know_about_carbon_neutrality", "^know_about_carbon_policy"
+    ),
     omit = omit_controls,
     title = "Table F.7. Robustness Checks for Transportation WTA"
   )
   export_stargazer_models(
     robust$elec_time,
     file.path(paths$tables, "Table_F.8_home_energy_conditioner_time.tex"),
+    keep = c(
+      "female", "is_bachelor", "^know_about_low_carbon",
+      "^know_about_carbon_neutrality", "^know_about_carbon_policy"
+    ),
     omit = omit_controls,
     title = "Table F.8. Robustness Check for Home Energy WTA"
   )
   export_stargazer_models(
     robust$green_importance,
     file.path(paths$tables, "Table_F.9_green_electricity_importance.tex"),
+    keep = c(
+      "^location", "income_level", "^know_about_carbon_neutrality",
+      "^know_about_carbon_policy"
+    ),
     omit = omit_controls,
     title = "Table F.9. Robustness Check for Green Electricity WTA"
   )

@@ -1,6 +1,5 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
-import copy
 import time
 
 import matplotlib.pyplot as plt
@@ -9,7 +8,7 @@ import pandas as pd
 import xgboost as xgb
 
 from .cli import parse_args
-from .config import LEGACY_WTA_PARAMS, RANDOM_SEED
+from .config import RANDOM_SEED
 from .data import (
     encode_for_xgboost,
     encode_like_reference,
@@ -33,7 +32,6 @@ from .models import (
     get_group_probabilities,
     train_xgb_model_bayesian,
     train_xgb_regressor_bayesian,
-    train_xgb_regressor_fixed,
 )
 from .r_bridge import (
     run_r_logit,
@@ -60,34 +58,35 @@ def _fmt(seconds: float) -> str:
     return f"{seconds:.1f}s" if seconds < 60 else f"{seconds / 60:.1f} min"
 
 
+def _check_dependencies() -> None:
+    """Fail fast on missing optional dependencies rather than after model training.
+
+    pandas routes DataFrame.to_latex(caption=...) through DataFrame.style, which
+    requires jinja2. Without this check the run dies at Step 3/7, discarding all
+    XGBoost training done up to that point.
+    """
+    try:
+        import jinja2  # noqa: F401
+    except ImportError:
+        raise SystemExit(
+            "Missing required package 'jinja2' (used by pandas to write the LaTeX tables).\n"
+            "Install it with:  pip install jinja2==3.1.6\n"
+            "or re-install all pinned packages with:  pip install -r requirements.txt"
+        )
+
+
 def main() -> None:
     args = parse_args()
     root = args.root.resolve()
+    _check_dependencies()
 
-    if not args.weighted:
-        ans = input("Also run weighted analysis (Appendix G)? [y/N] ").strip().lower()
-        args.weighted = ans in ("y", "yes")
-
-    _also_legacy = args.also_legacy
-    if not args.use_legacy_wta_params and not args.also_legacy:
-        ans = input("Also run legacy WTA comparison? [y/N] ").strip().lower()
-        _also_legacy = ans in ("y", "yes")
+    # Everything the paper reports is produced by a single default run: Sections 4.1-4.4,
+    # Section 5, and the Appendix G weighted analysis. Use --skip-weighted / --skip-simulation
+    # to shorten a run; no interactive prompt is involved.
+    args.weighted = not args.skip_weighted
 
     if not args.skip_main or args.weighted:
         _run(args, root)
-
-    if _also_legacy:
-        legacy_args = copy.copy(args)
-        legacy_args.use_legacy_wta_params = True
-        legacy_args.weighted = False
-        legacy_args.skip_main = False
-        legacy_args.output_subdir = args.output_subdir + "_legacy_wta"
-        legacy_args.sim_output_subdir = (
-            args.sim_output_subdir or "empirical5"
-        ) + "_legacy_wta"
-        print(f"\n{'='*60}")
-        print("Re-running analysis with legacy WTA hyperparameters...")
-        _run(legacy_args, root)
 
 
 def _run(args, root: Path) -> None:
@@ -99,12 +98,11 @@ def _run(args, root: Path) -> None:
     temp_dir = temp_root / args.output_subdir
     temp_dir.mkdir(parents=True, exist_ok=True)
     sim_output_subdir = args.sim_output_subdir or "empirical5"
-    use_legacy_wta = args.use_legacy_wta_params
 
     # Use the post-weights file because it is the most complete intermediate dataset
     # (contains all R-derived variables). The 'weights' column it carries is excluded
-    # from every feature set in data.py and is never passed to any model fitter –
-    # Sections 4.1–4.4 are unweighted main-text analyses; weighting is Appendix G only.
+    # from every feature set in data.py and is never passed to any model fitter -
+    # Sections 4.1-4.4 are unweighted main-text analyses; weighting is Appendix G only.
     input_file = temp_root / "energy_wta_with_post_weights.csv"
     if not input_file.exists():
         raise FileNotFoundError(
@@ -112,7 +110,7 @@ def _run(args, root: Path) -> None:
         )
 
     est_clf = 6 * args.n_trials * 0.11
-    est_reg = 6 * (args.reg_n_trials if not args.use_legacy_wta_params else 5) * 0.22
+    est_reg = 6 * args.reg_n_trials * 0.22
     est_r   = 60.0
     est_sim = 0.0 if args.skip_simulation else args.simulation_iterations * 23.0
     est_total = est_clf + est_reg + est_r + est_sim
@@ -174,29 +172,14 @@ def _run(args, root: Path) -> None:
         _t = time.perf_counter()
         trained_models_reg: dict[str, xgb.XGBRegressor] = {}
         for _i, (name, train_df, y_col, features, group_type) in enumerate(reg_tasks, 1):
-            if use_legacy_wta:
-                model = train_xgb_regressor_fixed(
-                    train_df[features],
-                    train_df[y_col],
-                    LEGACY_WTA_PARAMS[name],
-                )
-            else:
-                model = train_xgb_regressor_bayesian(
-                    train_df[features],
-                    train_df[y_col],
-                    group_type=group_type,
-                    n_trials=args.reg_n_trials,
-                    cv=args.cv,
-                )
-            trained_models_reg[name] = model
-        print(f"  Done ({_fmt(time.perf_counter() - _t)})")
-
-        if use_legacy_wta:
-            (output_dir / "legacy_params_used.txt").write_text(
-                "WTA XGBoost regressors used fixed hyperparameters copied from the original manuscript table.\n"
-                "Pref Alt classifiers were trained through the seeded Optuna workflow.\n",
-                encoding="utf-8",
+            trained_models_reg[name] = train_xgb_regressor_bayesian(
+                train_df[features],
+                train_df[y_col],
+                group_type=group_type,
+                n_trials=args.reg_n_trials,
+                cv=args.cv,
             )
+        print(f"  Done ({_fmt(time.perf_counter() - _t)})")
 
         df_params = build_combined_hyperparameter_table(trained_models, trained_models_reg)
         df_params.to_csv(output_dir / "Table_C.1_xgboost_hyperparameters.csv", encoding="utf-8-sig")
@@ -233,7 +216,7 @@ def _run(args, root: Path) -> None:
         final_df_random = run_monte_carlo_random(test_encoded, n_iterations=args.random_iterations)
         print(f"  Done ({_fmt(time.perf_counter() - _t)})")
 
-        print("\n[Step 6/7] Generating Sections 4.1–4.4 figures and tables...")
+        print("\n[Step 6/7] Generating Sections 4.1-4.4 figures and tables...")
         _t6 = time.perf_counter()
 
         accuracy_data = {
@@ -612,7 +595,7 @@ def _run(args, root: Path) -> None:
         current_n_list = [55, 100, 145]
         current_budgets = [1000, 2000, 3000, 4000]
 
-    # ── Weighted Sections 4.1–4.4 analysis ────────────────────────────────────
+    # ── Weighted Sections 4.1-4.4 analysis ────────────────────────────────────
     if args.weighted:
         _wN = 4 if args.skip_simulation else 6
         w_subdir = args.weighted_output_subdir
@@ -680,10 +663,10 @@ def _run(args, root: Path) -> None:
         w_reco_d = update_eco_results_with_floor(w_reco_d, w_temp_dir / "wta_preds_demos.csv")
         print(f"Done ({_fmt(time.perf_counter() - _t)})")
 
-        print(f"[Weighted 4/{_wN}] Generating weighted Sections 4.1–4.4 figures (G.3–G.6)...", end="  ", flush=True)
+        print(f"[Weighted 4/{_wN}] Generating weighted Sections 4.1-4.4 figures (G.3-G.6)...", end="  ", flush=True)
         _t = time.perf_counter()
 
-        # G.3 – prediction accuracy
+        # G.3 - prediction accuracy
         w_acc = pd.Series({
             "Logistic regression I":  clean_pct(w_feco.loc["Demos", "Perfect_Rate"]) * 100,
             "Logistic regression II": clean_pct(w_feco.loc["All",   "Perfect_Rate"]) * 100,
@@ -710,7 +693,7 @@ def _run(args, root: Path) -> None:
         fig.savefig(w_output_dir / "Figure_G.3_prediction_accuracy.png", bbox_inches="tight", dpi=300)
         plt.close(fig)
 
-        # G.4 – assignment outcomes (also defines w_df_plot for G.7 baseline)
+        # G.4 - assignment outcomes (also defines w_df_plot for G.7 baseline)
         _wkeys = ["Random", "Logit_All", "Logit_Demos", "XGB_All", "XGB_Demos", "Ideal"]
         _wlbls = ["Random assignment", "Logistic regression II", "Logistic regression I",
                   "XGBoost algorithm II", "XGBoost algorithm I", "Perfect assignment"]
@@ -749,7 +732,7 @@ def _run(args, root: Path) -> None:
         fig.savefig(w_output_dir / "Figure_G.4_assignment_outcomes.png", bbox_inches="tight", dpi=300)
         plt.close(fig)
 
-        # G.5 – quota compensation
+        # G.5 - quota compensation
         wm_id = get_n_household_metrics(results_ideal,  test_encoded, n_list=current_n_list)
         wm_xa = get_n_household_metrics(w_rxgb_a, test_encoded, n_list=current_n_list)
         wm_xd = get_n_household_metrics(w_rxgb_d, test_encoded, n_list=current_n_list)
@@ -790,7 +773,7 @@ def _run(args, root: Path) -> None:
         fig.savefig(w_output_dir / "Figure_G.5_quota_compensation.png", bbox_inches="tight", dpi=300)
         plt.close(fig)
 
-        # G.6 – budget participation
+        # G.6 - budget participation
         wb_id = get_budget_metrics(results_ideal, test_encoded, budget_list=current_budgets)
         wb_xa = get_budget_metrics(w_rxgb_a, test_encoded, budget_list=current_budgets)
         wb_xd = get_budget_metrics(w_rxgb_d, test_encoded, budget_list=current_budgets)
@@ -826,7 +809,7 @@ def _run(args, root: Path) -> None:
         plt.close(fig)
 
         print(f"Done ({_fmt(time.perf_counter() - _t)})")
-        print(f"  Weighted Sections 4.1–4.4 results saved to {w_output_dir}")
+        print(f"  Weighted Sections 4.1-4.4 results saved to {w_output_dir}")
 
     test_base = test_raw.copy().reset_index(drop=True)
 
@@ -1082,5 +1065,5 @@ def _run(args, root: Path) -> None:
     fig.savefig(sim_dir / "Figure_7_knowledge_growth.png", bbox_inches="tight", dpi=300)
     plt.close(fig)
 
-    print(f"\nAll done! Sections 4.1–4.4: {output_dir}  /  Section 5: {sim_dir}  (total time: {_fmt(time.perf_counter() - t_total)})")
+    print(f"\nAll done! Sections 4.1-4.4: {output_dir}  /  Section 5: {sim_dir}  (total time: {_fmt(time.perf_counter() - t_total)})")
 

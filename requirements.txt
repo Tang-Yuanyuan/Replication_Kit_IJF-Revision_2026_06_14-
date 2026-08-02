@@ -9,6 +9,7 @@ scikit-learn==1.6.1
 xgboost==3.1.2
 optuna==4.7.0
 matplotlib==3.8.2
+jinja2==3.1.2          # required by pandas DataFrame.to_latex(caption=...); any 3.1.x works
 
 # ── Transitive dependencies (pandas) ──────────────────────────────────────
 python-dateutil==2.8.2

@@ -78,6 +78,11 @@ revision_package/
 - R/                               # Modular R scripts for Section 3
 - python/empirical_4_1_5/          # Python package for Sections 4.1-4.4 and 5
 - results/                         # All outputs (created automatically)
+    - empirical3/                  # Section 3 + Appendices B, E, F, G tables
+    - empirical4.1_4.4/            # Sections 4.1-4.4 + Appendices C, D (main text)
+    - empirical5/                  # Section 5 knowledge-growth simulation
+    - empirical4.1_4.4_weighted/   # Appendix G: Figures G.3-G.6 (weighted)
+    - empirical5_weighted/         # Appendix G: Figure G.7 (weighted)
 - run_all.R                        # Entry point: R workflow (Section 3)
 - run_empirical4_and_5.py          # Entry point: Python workflow (Sections 4.1-4.4 and 5)
 - install.R                        # Installs R packages at pinned versions
@@ -118,10 +123,17 @@ Direct dependencies: `MASS` (7.3-65), `dplyr` (1.2.0), `brant` (0.3-0),
 pip install -r requirements.txt
 ```
 
-Installs 6 direct packages and 16 transitive dependencies at tested versions.
+Installs 7 direct packages and 16 transitive dependencies at tested versions.
 
 Direct dependencies: `pandas` (2.0.0), `numpy` (1.23.5), `scikit-learn`
-(1.6.1), `xgboost` (3.1.2), `optuna` (4.7.0), `matplotlib` (3.8.2).
+(1.6.1), `xgboost` (3.1.2), `optuna` (4.7.0), `matplotlib` (3.8.2),
+`jinja2` (3.1.2).
+
+> **Note:** `jinja2` is not imported directly by the analysis code, but pandas
+> requires it to render `DataFrame.to_latex(caption=...)`, which is used for
+> every `.tex` table. `run_empirical4_and_5.py` checks for it at start-up and
+> stops immediately with an install hint if it is missing. Any `3.1.x` release
+> produces identical output; the pinned 3.1.2 is the version used by the author.
 
 ### Step 3 -- Run the R workflow (Section 3)
 
@@ -150,48 +162,34 @@ python run_empirical4_and_5.py
 
 **Step 3 must complete before Step 4.**
 
-The script will prompt twice before running:
+This single command runs the complete Python workflow with no interactive
+prompts and produces **every** Python-generated exhibit in the paper:
 
-```
-Also run weighted analysis (Appendix G)? [y/N]
-Also run legacy WTA comparison? [y/N]
-```
-
-Answer `y` to include Appendix G outputs; answer `N` (or press Enter) to
-reproduce only the main-text results. Both options can also be set via
-command-line flags to skip the prompts (see below).
-
-Reproduces Sections 4.1-4.4 (ML prediction, assignment optimisation) and
-Section 5 (knowledge-growth simulation). Main outputs go to
-`results/empirical4.1_4.4/`; simulation outputs go to `results/empirical5/`.
+| Produced | Written to |
+| ---------------------------------------------- | ------------------------------------ |
+| Sections 4.1-4.4 (ML prediction, assignment)   | `results/empirical4.1_4.4/`        |
+| Section 5 (knowledge-growth simulation)        | `results/empirical5/`              |
+| Appendix G, Figures G.3-G.6 (weighted)         | `results/empirical4.1_4.4_weighted/` |
+| Appendix G, Figure G.7 (weighted)              | `results/empirical5_weighted/`     |
 
 Default settings: 50 Optuna trials per XGBoost classifier, 100 Optuna trials
-per WTA regressor, 3-fold cross-validation, 1,000 Monte Carlo draws for the
-random baseline, 200 knowledge-growth simulation iterations.
+per WTA regressor, 20 trials per weighted model, 3-fold cross-validation,
+1,000 Monte Carlo draws for the random baseline, 200 knowledge-growth
+simulation iterations. All random components are seeded, so repeated runs on
+the same machine produce byte-identical output.
 
-### Optional: Appendix G weighted ML analysis
-
-```powershell
-python run_empirical4_and_5.py --weighted
-```
-
-Adds Figures G.3-G.6 to `results/empirical4.1_4.4_weighted/` and Figure G.7
-to `results/empirical5_weighted/`. Uses 20 Optuna trials per weighted
-classifier and 20 per weighted WTA regressor by default.
-
-### Optional: legacy WTA hyperparameters
-
-Try to fix only the WTA regressors to the values reported in Table C.1 of the
-manuscript (keeping the PrefAlt classifiers on the standard Optuna workflow):
+Two flags can shorten a run if only part of the output is needed; neither is
+required to reproduce the paper:
 
 ```powershell
-python run_empirical4_and_5.py --use-legacy-wta-params --output-subdir "empirical4.1_4.4_legacy_wta" --skip-simulation
+python run_empirical4_and_5.py --skip-weighted      # main text only, no Appendix G
+python run_empirical4_and_5.py --skip-simulation    # stop after Step 6, no Section 5
 ```
 
 ### Smoke test (fast verification)
 
 ```powershell
-python run_empirical4_and_5.py --n-trials 1 --reg-n-trials 1 --cv 2 --random-iterations 5
+python run_empirical4_and_5.py --n-trials 1 --reg-n-trials 1 --cv 2 --random-iterations 5 --simulation-iterations 2
 ```
 
 ## Environment notes

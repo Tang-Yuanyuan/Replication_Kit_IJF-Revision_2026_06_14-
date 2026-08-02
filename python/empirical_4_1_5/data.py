@@ -69,7 +69,7 @@ def get_feature_sets(train_encoded: pd.DataFrame) -> dict[str, list[str]]:
             "y_elec",
             "y_green",
             "id",
-            "weights",        # post-stratification weight — Appendix G only, not used here
+            "weights",        # post-stratification weight -- Appendix G only, not used here
             "max_wta",
             "publictrans",
             "conditionernumber",
