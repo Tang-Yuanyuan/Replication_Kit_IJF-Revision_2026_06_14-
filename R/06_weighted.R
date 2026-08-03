@@ -270,7 +270,8 @@ run_weighted_analysis <- function(prepared) {
     models$car,
     "Table G.12. Weighted Transportation WTA",
     paste0(
-      "^location|^heard_about_global_warming|^know_about_low_carbon",
+      "^location|income_level|^heard_about_global_warming",
+      "|^know_about_low_carbon",
       "|^know_about_carbon_neutrality|^know_about_carbon_policy"
     ),
     file.path(paths$tables, "Table_G.12_weighted_transport.csv")
